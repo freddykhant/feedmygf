@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { ratelimit } from "~/lib/rate-limit";
+import { TRPCError } from "@trpc/server";
 
 export const placeRouter = createTRPCRouter({
   search: publicProcedure
@@ -8,11 +10,24 @@ export const placeRouter = createTRPCRouter({
         query: z.string().min(2),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      // Rate limiting
+      const identifier = ctx.headers?.get("x-forwarded-for") ?? "anonymous";
+      const { success } = await ratelimit.limit(identifier);
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many requests. Please try again later.",
+        });
+      }
+
       const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
       if (!apiKey) {
-        throw new Error("Google Places API key not configured");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Google Places API key not configured",
+        });
       }
 
       try {
@@ -42,7 +57,6 @@ export const placeRouter = createTRPCRouter({
           fullDescription: prediction.description,
         }));
       } catch (error) {
-        console.error("Places API error:", error);
         return [];
       }
     }),
@@ -53,11 +67,24 @@ export const placeRouter = createTRPCRouter({
         placeId: z.string(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      // Rate limiting
+      const identifier = ctx.headers?.get("x-forwarded-for") ?? "anonymous";
+      const { success } = await ratelimit.limit(identifier);
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many requests. Please try again later.",
+        });
+      }
+
       const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
       if (!apiKey) {
-        throw new Error("Google Places API key not configured");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Google Places API key not configured",
+        });
       }
 
       try {
@@ -87,8 +114,10 @@ export const placeRouter = createTRPCRouter({
           formattedAddress: data.result.formatted_address,
         };
       } catch (error) {
-        console.error("Place details API error:", error);
-        throw new Error("Failed to get place details");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get place details",
+        });
       }
     }),
 
@@ -99,11 +128,24 @@ export const placeRouter = createTRPCRouter({
         longitude: z.number(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Rate limiting
+      const identifier = ctx.headers?.get("x-forwarded-for") ?? "anonymous";
+      const { success } = await ratelimit.limit(identifier);
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many requests. Please try again later.",
+        });
+      }
+
       const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
       if (!apiKey) {
-        throw new Error("Google Places API key not configured");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Google Places API key not configured",
+        });
       }
 
       try {
@@ -112,7 +154,10 @@ export const placeRouter = createTRPCRouter({
         );
 
         if (!response.ok) {
-          throw new Error("Failed to reverse geocode");
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to reverse geocode",
+          });
         }
 
         const data = (await response.json()) as {
@@ -124,12 +169,11 @@ export const placeRouter = createTRPCRouter({
           }>;
         };
 
-        console.log("Geocoding API response:", JSON.stringify(data, null, 2));
-
         if (data.status !== "OK") {
-          throw new Error(
-            `Geocoding API error: ${data.status} - ${data.error_message ?? "Unknown error"}`,
-          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Geocoding API error: ${data.status}`,
+          });
         }
 
         if (data.results && data.results[0]) {
@@ -149,10 +193,16 @@ export const placeRouter = createTRPCRouter({
           };
         }
 
-        throw new Error("No results found for these coordinates");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No results found for these coordinates",
+        });
       } catch (error) {
-        console.error("Reverse geocoding error:", error);
-        throw new Error("Failed to reverse geocode location");
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to reverse geocode location",
+        });
       }
     }),
 
