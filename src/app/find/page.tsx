@@ -11,7 +11,7 @@ export default async function EatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 via-orange-50 to-blue-100">
+    <div className="min-h-screen bg-linear-to-b from-pink-50 via-orange-50 to-blue-100">
       <Header />
 
       {/* Main Content */}

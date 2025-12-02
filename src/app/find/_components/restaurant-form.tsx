@@ -14,6 +14,19 @@ import PlacesAutocomplete, { type PlaceResult } from "./places-autocomplete";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 
+type Restaurant = {
+  id: string;
+  name: string;
+  address: string;
+  rating: number;
+  userRatingCount: number;
+  priceLevel: number;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
 const cuisines = [
   "Any",
   "Italian",
@@ -39,7 +52,7 @@ export default function RestaurantForm() {
   const [priceLevel, setPriceLevel] = useState(2);
   const [cuisine, setCuisine] = useState("Any");
   const [loading, setLoading] = useState(false);
-  const [restaurant, setRestaurant] = useState<any>(null);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
 
   const reverseGeocodeMutation = api.place.reverseGeocode.useMutation();
   const searchRestaurantsMutation = api.place.searchRestaurants.useMutation();
@@ -48,26 +61,26 @@ export default function RestaurantForm() {
     if ("geolocation" in navigator) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
+        (position) => {
           const { latitude, longitude } = position.coords;
 
-          try {
-            const place = await reverseGeocodeMutation.mutateAsync({
-              latitude,
-              longitude,
-            });
+          void (async () => {
+            try {
+              const place = await reverseGeocodeMutation.mutateAsync({
+                latitude,
+                longitude,
+              });
 
-            setAddress(place.displayName);
-            setSelectedPlace(place);
-          } catch (error) {
-            console.error("Geocoding error:", error);
-            setAddress(`${latitude}, ${longitude}`);
-          } finally {
-            setLoading(false);
-          }
+              setAddress(place.displayName);
+              setSelectedPlace(place);
+            } catch {
+              setAddress(`${latitude}, ${longitude}`);
+            } finally {
+              setLoading(false);
+            }
+          })();
         },
-        (error) => {
-          console.error("Geolocation error:", error);
+        () => {
           alert(
             "Failed to get your location. Please enter an address manually.",
           );
@@ -129,7 +142,7 @@ export default function RestaurantForm() {
           <>
             {/* Location Input */}
             <div className="group flex flex-1 items-center gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
-              <MapPin className="h-5 w-5 flex-shrink-0 text-gray-400" />
+              <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
               <PlacesAutocomplete
                 onPlaceSelect={handlePlaceSelect}
                 placeholder="Enter address"
@@ -144,7 +157,7 @@ export default function RestaurantForm() {
               disabled={loading}
               className="flex items-center gap-4 rounded-2xl bg-gray-200/50 p-4 text-left transition-all hover:bg-gray-300/60 disabled:opacity-50"
             >
-              <Navigation className="h-5 w-5 flex-shrink-0 text-gray-400" />
+              <Navigation className="h-5 w-5 shrink-0 text-gray-400" />
               <span className="text-base text-gray-700">
                 Use Current Location
               </span>
@@ -154,7 +167,7 @@ export default function RestaurantForm() {
           /* Selected Location Display */
           <div className="flex flex-1 items-center justify-between rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
             <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 flex-shrink-0 text-gray-400" />
+              <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
               <div className="flex flex-col">
                 <span className="text-base font-medium text-gray-900">
                   {selectedPlace.displayName}
@@ -177,7 +190,7 @@ export default function RestaurantForm() {
 
       {/* Distance Slider */}
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
-        <TrendingUp className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
+        <TrendingUp className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-base text-gray-700">Distance</span>
@@ -197,7 +210,7 @@ export default function RestaurantForm() {
 
       {/* Rating Slider */}
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
-        <Star className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
+        <Star className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-base text-gray-700">Minimum Rating</span>
@@ -219,7 +232,7 @@ export default function RestaurantForm() {
 
       {/* Price Level Slider */}
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
-        <DollarSign className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
+        <DollarSign className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-base text-gray-700">Maximum Price</span>
@@ -241,7 +254,7 @@ export default function RestaurantForm() {
 
       {/* Cuisine Dropdown */}
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
-        <UtensilsCrossed className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
+        <UtensilsCrossed className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
           <select
             value={cuisine}

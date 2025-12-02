@@ -27,10 +27,10 @@ export default function AuthForm() {
           body: JSON.stringify({ email, password, name }),
         });
 
-        const data = await res.json();
+        const data = await res.json() as { error?: string };
 
         if (!res.ok) {
-          throw new Error(data.error || "Failed to sign up");
+          throw new Error(data.error ?? "Failed to sign up");
         }
 
         // After successful signup, sign in
@@ -43,7 +43,7 @@ export default function AuthForm() {
         if (result?.error) {
           setError("Failed to sign in after signup");
         } else {
-          router.push("/eat");
+          router.push("/find");
           router.refresh();
         }
       } else {
@@ -57,7 +57,7 @@ export default function AuthForm() {
         if (result?.error) {
           setError("Invalid email or password");
         } else {
-          router.push("/eat");
+          router.push("/find");
           router.refresh();
         }
       }
@@ -69,7 +69,7 @@ export default function AuthForm() {
   };
 
   const handleGoogleSignIn = async () => {
-    await signIn("google", { redirectTo: "/eat" });
+    await signIn("google", { redirectTo: "/find" });
   };
 
   return (

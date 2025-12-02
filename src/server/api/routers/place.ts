@@ -56,7 +56,7 @@ export const placeRouter = createTRPCRouter({
           formattedAddress: prediction.structured_formatting.secondary_text,
           fullDescription: prediction.description,
         }));
-      } catch (error) {
+      } catch {
         return [];
       }
     }),
@@ -113,7 +113,7 @@ export const placeRouter = createTRPCRouter({
           lng: data.result.geometry.location.lng,
           formattedAddress: data.result.formatted_address,
         };
-      } catch (error) {
+      } catch {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to get place details",
@@ -176,7 +176,7 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
-        if (data.results && data.results[0]) {
+        if (data.results?.[0]) {
           const result = data.results[0];
 
           // Extract just the street address (unit number + street name)
@@ -197,8 +197,8 @@ export const placeRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "No results found for these coordinates",
         });
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to reverse geocode location",
@@ -216,11 +216,24 @@ export const placeRouter = createTRPCRouter({
         cuisine: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Rate limiting
+      const identifier = ctx.headers?.get("x-forwarded-for") ?? "anonymous";
+      const { success } = await ratelimit.limit(identifier);
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many requests. Please try again later.",
+        });
+      }
+
       const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
       if (!apiKey) {
-        throw new Error("Google Places API key not configured");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Google Places API key not configured",
+        });
       }
 
       try {
@@ -230,7 +243,10 @@ export const placeRouter = createTRPCRouter({
         );
 
         if (!detailsResponse.ok) {
-          throw new Error("Failed to get place coordinates");
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to get place coordinates",
+          });
         }
 
         const detailsData = (await detailsResponse.json()) as {
@@ -299,11 +315,10 @@ export const placeRouter = createTRPCRouter({
         );
 
         if (!searchResponse.ok) {
-          const errorData = await searchResponse.json();
-          console.error("Places API search error:", errorData);
-          throw new Error(
-            `Failed to search restaurants: ${JSON.stringify(errorData)}`,
-          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to search restaurants",
+          });
         }
 
         const searchData = (await searchResponse.json()) as {
@@ -322,12 +337,12 @@ export const placeRouter = createTRPCRouter({
         };
 
         if (!searchData.places || searchData.places.length === 0) {
-          throw new Error(
-            "No restaurants found in this area. Try increasing the distance or adjusting your filters.",
-          );
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message:
+              "No restaurants found in this area. Try increasing the distance or adjusting your filters.",
+          });
         }
-
-        console.log(`Found ${searchData.places.length} restaurants initially`);
 
         // Filter by price level
         const filtered = searchData.places.filter((place) => {
@@ -339,35 +354,30 @@ export const placeRouter = createTRPCRouter({
               ? 0
               : parseInt(placePriceLevel);
 
-          console.log(
-            `Restaurant: ${place.displayName?.text}, Rating: ${place.rating}, Price: ${priceLevelNum}`,
-          );
-
           // Filter by price level (max price) - only if place has a price level
           if (priceLevelNum > 0 && priceLevelNum > input.priceLevel) {
-            console.log(
-              `  Filtered out: price ${priceLevelNum} > ${input.priceLevel}`,
-            );
             return false;
           }
 
-          console.log("  ✓ Passed all filters");
           return true;
         });
 
-        console.log(`${filtered.length} restaurants after filtering`);
-
         if (filtered.length === 0) {
-          throw new Error(
-            "No restaurants found matching your criteria. Try adjusting your filters.",
-          );
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message:
+              "No restaurants found matching your criteria. Try adjusting your filters.",
+          });
         }
 
         const randomRestaurant =
           filtered[Math.floor(Math.random() * filtered.length)];
 
         if (!randomRestaurant) {
-          throw new Error("Failed to select a restaurant");
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to select a restaurant",
+          });
         }
 
         // Convert price level from string to number
@@ -394,11 +404,11 @@ export const placeRouter = createTRPCRouter({
             : undefined,
         };
       } catch (error) {
-        console.error("Restaurant search error:", error);
-        if (error instanceof Error) {
-          throw error;
-        }
-        throw new Error("Failed to search for restaurants");
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to search for restaurants",
+        });
       }
     }),
 });

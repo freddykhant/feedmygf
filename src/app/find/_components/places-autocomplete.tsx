@@ -20,7 +20,7 @@ export default function PlacesAutocomplete({
   placeholder?: string;
   value?: string;
 }) {
-  const [query, setQuery] = useState(value || "");
+  const [query, setQuery] = useState(value ?? "");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -93,7 +93,7 @@ export default function PlacesAutocomplete({
       {/* Dropdown */}
       {showDropdown && results.length > 0 && (
         <div className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
-          {results.map((place) => (
+          {results.map((place: PlaceResult) => (
             <button
               key={place.id}
               onClick={() => handleSelect(place)}

@@ -4,7 +4,8 @@ import { db } from "~/server/db";
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json();
+    const body = await req.json() as { email?: string; password?: string; name?: string };
+    const { email, password, name } = body;
 
     // Validate input
     if (!email || !password || !name) {
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (password.length < 6) {
+    if (typeof password !== "string" || password.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters" },
         { status: 400 },
@@ -49,8 +50,7 @@ export async function POST(req: Request) {
       { message: "User created successfully", userId: user.id },
       { status: 201 },
     );
-  } catch (error) {
-    console.error("Signup error:", error);
+  } catch {
     return NextResponse.json(
       { error: "Failed to create user" },
       { status: 500 },

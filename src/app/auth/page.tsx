@@ -10,7 +10,7 @@ export default async function AuthPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-pink-50 via-orange-50 to-blue-100">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-b from-pink-50 via-orange-50 to-blue-100">
       {/* Auth Card */}
       <div className="relative z-10 w-full max-w-md px-6">
         <AuthForm />
