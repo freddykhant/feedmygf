@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
 export const placeRouter = createTRPCRouter({
-  search: protectedProcedure
+  search: publicProcedure
     .input(
       z.object({
         query: z.string().min(2),
@@ -47,7 +47,7 @@ export const placeRouter = createTRPCRouter({
       }
     }),
 
-  getDetails: protectedProcedure
+  getDetails: publicProcedure
     .input(
       z.object({
         placeId: z.string(),
@@ -92,7 +92,7 @@ export const placeRouter = createTRPCRouter({
       }
     }),
 
-  reverseGeocode: protectedProcedure
+  reverseGeocode: publicProcedure
     .input(
       z.object({
         latitude: z.number(),

@@ -9,9 +9,7 @@ import {
   UtensilsCrossed,
   TrendingUp,
 } from "lucide-react";
-import PlacesAutocomplete, {
-  type PlaceResult,
-} from "./places-autocomplete";
+import PlacesAutocomplete, { type PlaceResult } from "./places-autocomplete";
 import { api } from "~/trpc/react";
 
 const cuisines = [
@@ -48,13 +46,13 @@ export default function RestaurantForm() {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-          
+
           try {
             const place = await reverseGeocodeMutation.mutateAsync({
               latitude,
               longitude,
             });
-            
+
             setAddress(place.displayName);
             setSelectedPlace(place);
           } catch (error) {
