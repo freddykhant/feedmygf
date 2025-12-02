@@ -1,7 +1,7 @@
-import { auth, signIn } from "~/server/auth";
-import { api, HydrateClient } from "~/trpc/server";
+import { auth } from "~/server/auth";
+import { HydrateClient } from "~/trpc/server";
 import { redirect } from "next/navigation";
-import Image from "next/image";
+import Link from "next/link";
 
 export default async function Home() {
   const session = await auth();
@@ -12,69 +12,55 @@ export default async function Home() {
 
   return (
     <HydrateClient>
-      <main className="flex min-h-screen flex-col bg-linear-to-br from-blue-50 via-white to-purple-50">
+      <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#0A0A0A]">
+        {/* Gradient Background Effects */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 -left-1/4 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 blur-[120px]" />
+          <div className="absolute -right-1/4 bottom-0 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 blur-[120px]" />
+        </div>
+
         {/* Header */}
-        <header className="backdrop-blur-s border-b border-gray-200 bg-white">
+        <header className="relative z-10 border-b border-white/10 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-2">
-              <Image
-                src="/favicon.ico"
-                alt="feedmygf logo"
-                width={24}
-                height={24}
-              />
-              <span className="text-lg font-bold text-gray-800">feedmygf</span>
+              <span className="text-lg font-semibold text-white">feedmygf</span>
             </div>
-            <form
-              action={async () => {
-                "use server";
-                await signIn("google", { redirectTo: "/auth" });
-              }}
+            <Link
+              href="/auth"
+              className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-white backdrop-blur-sm transition-all hover:bg-white/10"
             >
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-              >
-                Sign in
-              </button>
-            </form>
+              Sign in
+            </Link>
           </div>
         </header>
 
         {/* Hero Section */}
-        <main className="flex flex-1 flex-col items-center justify-center px-6 py-20">
+        <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-20">
           <div className="mx-auto max-w-4xl text-center">
             {/* Heading */}
-            <h1 className="mb-6 text-6xl leading-tight font-bold text-gray-900">
+            <h1 className="mb-6 text-7xl leading-tight font-bold tracking-tight text-white md:text-8xl">
+              I don&apos;t know,
               <br />
-              <span className="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Feed My Girlfriend
+              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                you choose.
               </span>
             </h1>
 
             {/* Subheading */}
-            <p className="mb-10 text-xl text-gray-600">
-              For you and your indecisive significant other
+            <p className="mb-12 text-xl text-gray-400 md:text-2xl">
+              For your clueless self, and your hangry girlfriend.
             </p>
 
             {/* CTA */}
-            <form
-              action={async () => {
-                "use server";
-                await signIn("google", { redirectTo: "/auth" });
-              }}
-              className="mb-4"
+            <Link
+              href="/auth"
+              className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-lg font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)]"
             >
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl"
-              >
-                Let's Eat
-              </button>
-            </form>
+              Get Started
+            </Link>
           </div>
         </main>
-      </main>
+      </div>
     </HydrateClient>
   );
 }
