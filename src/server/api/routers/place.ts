@@ -196,14 +196,57 @@ export const placeRouter = createTRPCRouter({
 
         const { lat, lng } = detailsData.result.geometry.location;
 
-        // Search for nearby restaurants using Places API (legacy)
-        // Use textsearch if cuisine is specified, otherwise use nearbysearch with price filters
-        const searchUrl =
-          input.cuisine !== "Any"
-            ? `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(input.cuisine + " restaurant")}&location=${lat},${lng}&radius=${input.distance * 1000}&type=restaurant&minprice=0&maxprice=${input.priceLevel}&key=${apiKey}`
-            : `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${input.distance * 1000}&type=restaurant&minprice=0&maxprice=${input.priceLevel}&key=${apiKey}`;
+        // Build included types based on cuisine selection
+        const includedTypes = ["restaurant"];
+        if (input.cuisine !== "Any") {
+          const cuisineTypeMap: Record<string, string> = {
+            Italian: "italian_restaurant",
+            Japanese: "japanese_restaurant",
+            Chinese: "chinese_restaurant",
+            Thai: "thai_restaurant",
+            Mexican: "mexican_restaurant",
+            Indian: "indian_restaurant",
+            French: "french_restaurant",
+            Korean: "korean_restaurant",
+            Vietnamese: "vietnamese_restaurant",
+            Mediterranean: "mediterranean_restaurant",
+            American: "american_restaurant",
+            Greek: "greek_restaurant",
+            Spanish: "spanish_restaurant",
+          };
+          const cuisineType = cuisineTypeMap[input.cuisine];
+          if (cuisineType) {
+            includedTypes.push(cuisineType);
+          }
+        }
 
-        const searchResponse = await fetch(searchUrl);
+        // Search using Places API (New)
+        const searchResponse = await fetch(
+          "https://places.googleapis.com/v1/places:searchNearby",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Goog-Api-Key": apiKey,
+              "X-Goog-FieldMask":
+                "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.location",
+            },
+            body: JSON.stringify({
+              includedTypes: includedTypes,
+              locationRestriction: {
+                circle: {
+                  center: {
+                    latitude: lat,
+                    longitude: lng,
+                  },
+                  radius: input.distance * 1000,
+                },
+              },
+              maxResultCount: 20,
+              minRating: input.rating,
+            }),
+          },
+        );
 
         if (!searchResponse.ok) {
           const errorData = await searchResponse.json();
@@ -214,58 +257,49 @@ export const placeRouter = createTRPCRouter({
         }
 
         const searchData = (await searchResponse.json()) as {
-          results?: Array<{
-            place_id: string;
-            name: string;
-            vicinity: string;
+          places?: Array<{
+            id: string;
+            displayName?: { text: string };
+            formattedAddress?: string;
             rating?: number;
-            user_ratings_total?: number;
-            price_level?: number;
-            types?: string[];
-            geometry: {
-              location: {
-                lat: number;
-                lng: number;
-              };
+            userRatingCount?: number;
+            priceLevel?: string;
+            location?: {
+              latitude: number;
+              longitude: number;
             };
           }>;
         };
 
-        if (!searchData.results || searchData.results.length === 0) {
+        if (!searchData.places || searchData.places.length === 0) {
           throw new Error(
-            "No restaurants found in this area. Try increasing the distance.",
+            "No restaurants found in this area. Try increasing the distance or adjusting your filters.",
           );
         }
 
-        console.log(`Found ${searchData.results.length} restaurants initially`);
+        console.log(`Found ${searchData.places.length} restaurants initially`);
 
-        // Filter by rating and price level
-        const filtered = searchData.results.filter((place) => {
-          const placeRating = place.rating ?? 0;
-          const placePriceLevel = place.price_level ?? 0;
+        // Filter by price level
+        const filtered = searchData.places.filter((place) => {
+          const placePriceLevel = place.priceLevel
+            ? place.priceLevel.replace("PRICE_LEVEL_", "")
+            : "0";
+          const priceLevelNum =
+            placePriceLevel === "FREE" || placePriceLevel === "UNSPECIFIED"
+              ? 0
+              : parseInt(placePriceLevel);
 
           console.log(
-            `Restaurant: ${place.name}, Rating: ${placeRating}, Price: ${placePriceLevel}, Types: ${place.types?.join(", ")}`,
+            `Restaurant: ${place.displayName?.text}, Rating: ${place.rating}, Price: ${priceLevelNum}`,
           );
 
-          // Filter by rating
-          if (placeRating < input.rating) {
-            console.log(
-              `  Filtered out: rating ${placeRating} < ${input.rating}`,
-            );
-            return false;
-          }
-
           // Filter by price level (max price) - only if place has a price level
-          if (placePriceLevel > 0 && placePriceLevel > input.priceLevel) {
+          if (priceLevelNum > 0 && priceLevelNum > input.priceLevel) {
             console.log(
-              `  Filtered out: price ${placePriceLevel} > ${input.priceLevel}`,
+              `  Filtered out: price ${priceLevelNum} > ${input.priceLevel}`,
             );
             return false;
           }
-
-          // Cuisine filtering is done via text search in the API call
-          // No need to filter again here since textsearch already filters by cuisine
 
           console.log("  ✓ Passed all filters");
           return true;
@@ -273,7 +307,6 @@ export const placeRouter = createTRPCRouter({
 
         console.log(`${filtered.length} restaurants after filtering`);
 
-        // Pick a random restaurant from filtered results
         if (filtered.length === 0) {
           throw new Error(
             "No restaurants found matching your criteria. Try adjusting your filters.",
@@ -287,17 +320,28 @@ export const placeRouter = createTRPCRouter({
           throw new Error("Failed to select a restaurant");
         }
 
+        // Convert price level from string to number
+        const priceLevelStr = randomRestaurant.priceLevel
+          ? randomRestaurant.priceLevel.replace("PRICE_LEVEL_", "")
+          : "0";
+        const priceLevel =
+          priceLevelStr === "FREE" || priceLevelStr === "UNSPECIFIED"
+            ? 0
+            : parseInt(priceLevelStr);
+
         return {
-          id: randomRestaurant.place_id,
-          name: randomRestaurant.name,
-          address: randomRestaurant.vicinity,
+          id: randomRestaurant.id,
+          name: randomRestaurant.displayName?.text ?? "Unknown Restaurant",
+          address: randomRestaurant.formattedAddress ?? "Address not available",
           rating: randomRestaurant.rating ?? 0,
-          userRatingCount: randomRestaurant.user_ratings_total ?? 0,
-          priceLevel: randomRestaurant.price_level ?? 0,
-          location: {
-            latitude: randomRestaurant.geometry.location.lat,
-            longitude: randomRestaurant.geometry.location.lng,
-          },
+          userRatingCount: randomRestaurant.userRatingCount ?? 0,
+          priceLevel: priceLevel,
+          location: randomRestaurant.location
+            ? {
+                latitude: randomRestaurant.location.latitude,
+                longitude: randomRestaurant.location.longitude,
+              }
+            : undefined,
         };
       } catch (error) {
         console.error("Restaurant search error:", error);
