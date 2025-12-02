@@ -298,7 +298,7 @@ export const placeRouter = createTRPCRouter({
               "Content-Type": "application/json",
               "X-Goog-Api-Key": apiKey,
               "X-Goog-FieldMask":
-                "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.location",
+                "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.location,places.photos",
             },
             body: JSON.stringify({
               includedTypes: includedTypes,
@@ -336,6 +336,11 @@ export const placeRouter = createTRPCRouter({
               latitude: number;
               longitude: number;
             };
+            photos?: Array<{
+              name: string;
+              widthPx: number;
+              heightPx: number;
+            }>;
           }>;
         };
 
@@ -392,6 +397,11 @@ export const placeRouter = createTRPCRouter({
             ? 0
             : parseInt(priceLevelStr);
 
+        // Get photo URL if available
+        const photoUrl = randomRestaurant.photos?.[0]
+          ? `https://places.googleapis.com/v1/${randomRestaurant.photos[0].name}/media?maxHeightPx=400&maxWidthPx=400&key=${apiKey}`
+          : undefined;
+
         return {
           id: randomRestaurant.id,
           name: randomRestaurant.displayName?.text ?? "Unknown Restaurant",
@@ -399,6 +409,7 @@ export const placeRouter = createTRPCRouter({
           rating: randomRestaurant.rating ?? 0,
           userRatingCount: randomRestaurant.userRatingCount ?? 0,
           priceLevel: priceLevel,
+          photoUrl: photoUrl,
           location: randomRestaurant.location
             ? {
                 latitude: randomRestaurant.location.latitude,
