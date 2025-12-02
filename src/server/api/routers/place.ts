@@ -116,11 +116,21 @@ export const placeRouter = createTRPCRouter({
         }
 
         const data = (await response.json()) as {
+          status?: string;
+          error_message?: string;
           results?: Array<{
             place_id: string;
             formatted_address: string;
           }>;
         };
+
+        console.log("Geocoding API response:", JSON.stringify(data, null, 2));
+
+        if (data.status !== "OK") {
+          throw new Error(
+            `Geocoding API error: ${data.status} - ${data.error_message ?? "Unknown error"}`,
+          );
+        }
 
         if (data.results && data.results[0]) {
           const result = data.results[0];
