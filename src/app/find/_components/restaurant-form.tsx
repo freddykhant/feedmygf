@@ -127,7 +127,7 @@ export default function RestaurantForm() {
 
       setRestaurant(result);
       toast.success("Found the perfect spot!");
-      
+
       // Trigger confetti animation
       void confetti({
         particleCount: 100,
