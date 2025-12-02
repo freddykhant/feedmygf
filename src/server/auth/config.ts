@@ -76,16 +76,27 @@ export const authConfig = {
       },
     }),
   ],
-  adapter: PrismaAdapter(db),
+  session: {
+    strategy: "jwt",
+  },
   pages: {
     signIn: "/auth",
   },
   callbacks: {
-    session: ({ session, user }) => ({
+    jwt: ({ token, user }) => {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
+        token.picture = user.image;
+      }
+      return token;
+    },
+    session: ({ session, token }) => ({
       ...session,
       user: {
         ...session.user,
-        id: user.id,
+        id: token.id as string,
       },
     }),
   },
