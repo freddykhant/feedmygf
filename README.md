@@ -1,29 +1,51 @@
-# Create T3 App
+# feedmygf
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+restaurant finder with vibes. can't decide where to eat? just set your preferences and get a random spot nearby.
 
-## What's next? How do I make an app with this?
+## demo
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+## tech stack
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+- next.js 15 + app router
+- trpc for type-safe apis
+- prisma + neon postgres
+- nextauth for google oauth + email/password
+- google places api (new version)
+- upstash redis for rate limiting
+- tailwind css v4
+- canvas-confetti for the celebration vibes
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+## setup
 
-## Learn More
+```bash
+# install deps
+pnpm install
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+# copy env file
+cp .env.example .env
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+# add your keys to .env:
+# - DATABASE_URL (neon postgres)
+# - NEXTAUTH_SECRET (run: npx auth secret)
+# - GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET
+# - GOOGLE_PLACES_API_KEY (enable Places API + Geocoding API)
+# - UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+# run migrations
+pnpm prisma migrate dev
 
-## How do I deploy this?
+# start dev server
+pnpm dev
+```
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+## features
+
+- ✅ email/password + google oauth
+- ✅ google places autocomplete with current location
+- ✅ cuisine-specific filtering (italian, japanese, chinese, etc.)
+- ✅ restaurant photos from google places
+- ✅ confetti animation on success
+- ✅ rate limiting on all api calls
+- ✅ production build passing with zero errors
+
+built with the t3 stack.
