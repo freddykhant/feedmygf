@@ -51,7 +51,7 @@ export const authConfig = {
         const bcrypt = await import("bcryptjs");
 
         const user = await db.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: credentials.email as string },
         });
 
         if (!user || !user.password) {
@@ -59,7 +59,7 @@ export const authConfig = {
         }
 
         const isPasswordValid = await bcrypt.compare(
-          credentials.password,
+          credentials.password as string,
           user.password,
         );
 
