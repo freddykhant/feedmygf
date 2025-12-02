@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Star } from "lucide-react";
 
 const cuisines = [
   "Any",
@@ -128,17 +129,16 @@ export default function RestaurantForm() {
             onChange={(e) => setDistance(Number(e.target.value))}
             className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-gray-900"
           />
-          <div className="mt-1 flex justify-between text-xs text-gray-400">
-            <span>1 km</span>
-            <span>50 km</span>
-          </div>
+          <div className="mt-1 flex justify-between text-xs text-gray-400"></div>
         </div>
 
         {/* Rating Slider */}
         <div>
           <label className="mb-3 flex items-center justify-between text-sm font-medium text-gray-700">
             <span>Minimum Rating</span>
-            <span className="text-gray-500">{rating.toFixed(1)} ⭐</span>
+            <span className="flex items-center gap-1 text-gray-500">
+              {rating.toFixed(1)} <Star className="h-4 w-4" />
+            </span>
           </label>
           <input
             type="range"
@@ -149,10 +149,7 @@ export default function RestaurantForm() {
             onChange={(e) => setRating(Number(e.target.value))}
             className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-gray-900"
           />
-          <div className="mt-1 flex justify-between text-xs text-gray-400">
-            <span>0</span>
-            <span>5</span>
-          </div>
+          <div className="mt-1 flex justify-between text-xs text-gray-400"></div>
         </div>
 
         {/* Price Level Slider */}
@@ -170,12 +167,7 @@ export default function RestaurantForm() {
             onChange={(e) => setPriceLevel(Number(e.target.value))}
             className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-gray-900"
           />
-          <div className="mt-1 flex justify-between text-xs text-gray-400">
-            <span>$</span>
-            <span>$$</span>
-            <span>$$$</span>
-            <span>$$$$</span>
-          </div>
+          <div className="mt-1 flex justify-between text-xs text-gray-400"></div>
         </div>
 
         {/* Cuisine Dropdown */}
