@@ -27,7 +27,7 @@ export default function AuthForm() {
           body: JSON.stringify({ email, password, name }),
         });
 
-        const data = await res.json() as { error?: string };
+        const data = (await res.json()) as { error?: string };
 
         if (!res.ok) {
           throw new Error(data.error ?? "Failed to sign up");

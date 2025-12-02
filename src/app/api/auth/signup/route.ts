@@ -4,7 +4,11 @@ import { db } from "~/server/db";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json() as { email?: string; password?: string; name?: string };
+    const body = (await req.json()) as {
+      email?: string;
+      password?: string;
+      name?: string;
+    };
     const { email, password, name } = body;
 
     // Validate input
