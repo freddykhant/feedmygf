@@ -4,6 +4,8 @@ restaurant finder with vibes. can't decide where to eat? just set your preferenc
 
 ## demo
 
+<img src="./public/fmg.gif" width="800" />
+
 ## tech stack
 
 - next.js 15 + app router
