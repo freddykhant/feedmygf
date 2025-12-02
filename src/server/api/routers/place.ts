@@ -155,4 +155,156 @@ export const placeRouter = createTRPCRouter({
         throw new Error("Failed to reverse geocode location");
       }
     }),
+
+  searchRestaurants: publicProcedure
+    .input(
+      z.object({
+        placeId: z.string(),
+        distance: z.number().min(1).max(50),
+        rating: z.number().min(0).max(5),
+        priceLevel: z.number().min(1).max(4),
+        cuisine: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+
+      if (!apiKey) {
+        throw new Error("Google Places API key not configured");
+      }
+
+      try {
+        // First get the coordinates for the place
+        const detailsResponse = await fetch(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${input.placeId}&fields=geometry&key=${apiKey}`,
+        );
+
+        if (!detailsResponse.ok) {
+          throw new Error("Failed to get place coordinates");
+        }
+
+        const detailsData = (await detailsResponse.json()) as {
+          result: {
+            geometry: {
+              location: {
+                lat: number;
+                lng: number;
+              };
+            };
+          };
+        };
+
+        const { lat, lng } = detailsData.result.geometry.location;
+
+        // Search for nearby restaurants
+        const searchResponse = await fetch(
+          "https://places.googleapis.com/v1/places:searchNearby",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Goog-Api-Key": apiKey,
+              "X-Goog-FieldMask":
+                "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.primaryType,places.types,places.location",
+            },
+            body: JSON.stringify({
+              includedTypes: ["restaurant"],
+              locationRestriction: {
+                circle: {
+                  center: {
+                    latitude: lat,
+                    longitude: lng,
+                  },
+                  radius: input.distance * 1000, // Convert km to meters
+                },
+              },
+              maxResultCount: 20,
+            }),
+          },
+        );
+
+        if (!searchResponse.ok) {
+          throw new Error("Failed to search restaurants");
+        }
+
+        const searchData = (await searchResponse.json()) as {
+          places?: Array<{
+            id: string;
+            displayName?: { text: string };
+            formattedAddress?: string;
+            rating?: number;
+            userRatingCount?: number;
+            priceLevel?: string;
+            primaryType?: string;
+            types?: string[];
+            location?: {
+              latitude: number;
+              longitude: number;
+            };
+          }>;
+        };
+
+        if (!searchData.places) {
+          return [];
+        }
+
+        // Filter by rating and price level
+        const filtered = searchData.places.filter((place) => {
+          const placeRating = place.rating ?? 0;
+          const placePriceLevel = place.priceLevel
+            ? place.priceLevel.replace("PRICE_LEVEL_", "")
+            : "0";
+          const priceLevelNum =
+            placePriceLevel === "FREE" ? 0 : parseInt(placePriceLevel);
+
+          // Filter by rating
+          if (placeRating < input.rating) return false;
+
+          // Filter by price level (max price)
+          if (priceLevelNum > input.priceLevel) return false;
+
+          // Filter by cuisine if not "Any"
+          if (input.cuisine !== "Any" && place.types) {
+            const cuisineType = input.cuisine.toLowerCase().replace(" ", "_");
+            const hasCuisineType = place.types.some((type) =>
+              type.toLowerCase().includes(cuisineType),
+            );
+            if (!hasCuisineType) return false;
+          }
+
+          return true;
+        });
+
+        // Pick a random restaurant from filtered results
+        if (filtered.length === 0) {
+          throw new Error(
+            "No restaurants found matching your criteria. Try adjusting your filters.",
+          );
+        }
+
+        const randomRestaurant =
+          filtered[Math.floor(Math.random() * filtered.length)];
+
+        if (!randomRestaurant) {
+          throw new Error("Failed to select a restaurant");
+        }
+
+        return {
+          id: randomRestaurant.id,
+          name: randomRestaurant.displayName?.text ?? "Unknown Restaurant",
+          address: randomRestaurant.formattedAddress ?? "Address not available",
+          rating: randomRestaurant.rating ?? 0,
+          userRatingCount: randomRestaurant.userRatingCount ?? 0,
+          priceLevel: randomRestaurant.priceLevel ?? "PRICE_LEVEL_UNSPECIFIED",
+          primaryType: randomRestaurant.primaryType ?? "restaurant",
+          location: randomRestaurant.location,
+        };
+      } catch (error) {
+        console.error("Restaurant search error:", error);
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Failed to search for restaurants");
+      }
+    }),
 });

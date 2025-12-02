@@ -38,8 +38,11 @@ export default function RestaurantForm() {
   const [priceLevel, setPriceLevel] = useState(2);
   const [cuisine, setCuisine] = useState("Any");
   const [loading, setLoading] = useState(false);
+  const [restaurant, setRestaurant] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const reverseGeocodeMutation = api.place.reverseGeocode.useMutation();
+  const searchRestaurantsMutation = api.place.searchRestaurants.useMutation();
 
   const handleUseCurrentLocation = async () => {
     if ("geolocation" in navigator) {
@@ -88,21 +91,35 @@ export default function RestaurantForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedPlace) {
+      setError("Please select a location");
+      return;
+    }
+
     setLoading(true);
+    setError(null);
+    setRestaurant(null);
 
-    // TODO: Implement restaurant search
-    console.log({
-      selectedPlace,
-      address,
-      distance,
-      rating,
-      priceLevel,
-      cuisine,
-    });
+    try {
+      const result = await searchRestaurantsMutation.mutateAsync({
+        placeId: selectedPlace.id,
+        distance,
+        rating,
+        priceLevel,
+        cuisine,
+      });
 
-    setTimeout(() => {
+      setRestaurant(result);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to find a restaurant. Please try again.",
+      );
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -240,10 +257,56 @@ export default function RestaurantForm() {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="rounded-2xl bg-red-100/80 p-4 text-center text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* Restaurant Result */}
+      {restaurant && (
+        <div className="rounded-2xl bg-white/80 p-6 shadow-sm">
+          <h3 className="text-2xl font-bold text-gray-900">
+            {restaurant.name}
+          </h3>
+          <p className="mt-2 text-gray-600">{restaurant.address}</p>
+          <div className="mt-4 flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+              <span className="font-medium text-gray-900">
+                {restaurant.rating.toFixed(1)}
+              </span>
+              <span className="text-sm text-gray-500">
+                ({restaurant.userRatingCount} reviews)
+              </span>
+            </div>
+            {restaurant.priceLevel !== "PRICE_LEVEL_UNSPECIFIED" && (
+              <span className="text-gray-600">
+                {restaurant.priceLevel
+                  .replace("PRICE_LEVEL_", "")
+                  .replace("FREE", "$")}
+              </span>
+            )}
+          </div>
+          {restaurant.location && (
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${restaurant.location.latitude},${restaurant.location.longitude}&query_place_id=${restaurant.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-gray-200/80 px-6 py-2.5 text-sm font-medium text-gray-700 backdrop-blur-sm transition-all hover:bg-gray-300/80"
+            >
+              <MapPin className="h-4 w-4" />
+              Open in Google Maps
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !selectedPlace}
         className="w-full rounded-2xl bg-gray-600/90 px-6 py-4 text-base font-medium text-white transition-all hover:bg-gray-700/90 disabled:opacity-50"
       >
         {loading ? "Searching..." : "Find Restaurant"}
