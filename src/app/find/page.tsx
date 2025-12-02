@@ -18,11 +18,8 @@ export default async function EatPage() {
       <main className="mx-auto max-w-2xl px-6 py-12">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900">
-            Find a Restaurant
+            Feed Your Girlfriend
           </h1>
-          <p className="mt-2 text-gray-600">
-            Let us help you decide where to eat
-          </p>
         </div>
 
         <RestaurantForm />
