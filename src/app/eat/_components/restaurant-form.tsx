@@ -9,6 +9,10 @@ import {
   UtensilsCrossed,
   TrendingUp,
 } from "lucide-react";
+import PlacesAutocomplete, {
+  type PlaceResult,
+} from "./places-autocomplete";
+import { api } from "~/trpc/react";
 
 const cuisines = [
   "Any",
@@ -29,29 +33,53 @@ const cuisines = [
 
 export default function RestaurantForm() {
   const [address, setAddress] = useState("");
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
   const [distance, setDistance] = useState(5);
   const [rating, setRating] = useState(3.0);
   const [priceLevel, setPriceLevel] = useState(2);
   const [cuisine, setCuisine] = useState("Any");
   const [loading, setLoading] = useState(false);
 
-  const handleUseCurrentLocation = () => {
+  const reverseGeocodeMutation = api.place.reverseGeocode.useMutation();
+
+  const handleUseCurrentLocation = async () => {
     if ("geolocation" in navigator) {
+      setLoading(true);
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setAddress(
-            `${position.coords.latitude}, ${position.coords.longitude}`,
-          );
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          try {
+            const place = await reverseGeocodeMutation.mutateAsync({
+              latitude,
+              longitude,
+            });
+            
+            setAddress(place.displayName);
+            setSelectedPlace(place);
+          } catch (error) {
+            console.error("Geocoding error:", error);
+            setAddress(`${latitude}, ${longitude}`);
+          } finally {
+            setLoading(false);
+          }
         },
         (error) => {
+          console.error("Geolocation error:", error);
           alert(
             "Failed to get your location. Please enter an address manually.",
           );
+          setLoading(false);
         },
       );
     } else {
       alert("Geolocation is not supported by your browser.");
     }
+  };
+
+  const handlePlaceSelect = (place: PlaceResult) => {
+    setSelectedPlace(place);
+    setAddress(place.displayName);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +88,7 @@ export default function RestaurantForm() {
 
     // TODO: Implement restaurant search
     console.log({
+      selectedPlace,
       address,
       distance,
       rating,
@@ -77,24 +106,20 @@ export default function RestaurantForm() {
       <div className="flex flex-row gap-3">
         {/* Location Input */}
         <div className="group flex flex-1 items-center gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
-          <MapPin className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
-          <div className="flex-1">
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Enter address"
-              required
-              className="w-full bg-transparent text-base text-gray-900 placeholder-gray-400 outline-none"
-            />
-          </div>
+          <MapPin className="h-5 w-5 flex-shrink-0 text-gray-400" />
+          <PlacesAutocomplete
+            onPlaceSelect={handlePlaceSelect}
+            placeholder="Enter address"
+            value={address}
+          />
         </div>
 
         {/* Use Current Location Button */}
         <button
           type="button"
           onClick={handleUseCurrentLocation}
-          className="flex items-center gap-4 rounded-2xl bg-gray-200/50 p-4 text-left transition-all hover:bg-gray-300/60"
+          disabled={loading}
+          className="flex items-center gap-4 rounded-2xl bg-gray-200/50 p-4 text-left transition-all hover:bg-gray-300/60 disabled:opacity-50"
         >
           <Navigation className="h-5 w-5 flex-shrink-0 text-gray-400" />
           <span className="text-base text-gray-700">Use Current Location</span>

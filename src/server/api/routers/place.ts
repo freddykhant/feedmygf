@@ -91,4 +91,51 @@ export const placeRouter = createTRPCRouter({
         throw new Error("Failed to get place details");
       }
     }),
+
+  reverseGeocode: protectedProcedure
+    .input(
+      z.object({
+        latitude: z.number(),
+        longitude: z.number(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+
+      if (!apiKey) {
+        throw new Error("Google Places API key not configured");
+      }
+
+      try {
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${apiKey}`,
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to reverse geocode");
+        }
+
+        const data = (await response.json()) as {
+          results?: Array<{
+            place_id: string;
+            formatted_address: string;
+          }>;
+        };
+
+        if (data.results && data.results[0]) {
+          const result = data.results[0];
+          return {
+            id: result.place_id,
+            displayName: result.formatted_address,
+            formattedAddress: result.formatted_address,
+            fullDescription: result.formatted_address,
+          };
+        }
+
+        throw new Error("No results found for these coordinates");
+      } catch (error) {
+        console.error("Reverse geocoding error:", error);
+        throw new Error("Failed to reverse geocode location");
+      }
+    }),
 });
