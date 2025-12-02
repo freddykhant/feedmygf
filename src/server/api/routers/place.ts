@@ -263,7 +263,8 @@ export const placeRouter = createTRPCRouter({
         const { lat, lng } = detailsData.result.geometry.location;
 
         // Build included types based on cuisine selection
-        const includedTypes = ["restaurant"];
+        // when a specific cuisine is selected, use ONLY that type (not "restaurant" + cuisine) because Places API uses OR logic
+        let includedTypes: string[];
         if (input.cuisine !== "Any") {
           const cuisineTypeMap: Record<string, string> = {
             Italian: "italian_restaurant",
@@ -281,9 +282,11 @@ export const placeRouter = createTRPCRouter({
             Spanish: "spanish_restaurant",
           };
           const cuisineType = cuisineTypeMap[input.cuisine];
-          if (cuisineType) {
-            includedTypes.push(cuisineType);
-          }
+          // Use ONLY the specific cuisine type for precise filtering
+          includedTypes = cuisineType ? [cuisineType] : ["restaurant"];
+        } else {
+          // When "Any" is selected, use general restaurant type
+          includedTypes = ["restaurant"];
         }
 
         // Search using Places API (New)
