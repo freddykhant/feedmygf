@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import PlacesAutocomplete, { type PlaceResult } from "./places-autocomplete";
 import { api } from "~/trpc/react";
+import { toast } from "sonner";
 
 const cuisines = [
   "Any",
@@ -39,7 +40,6 @@ export default function RestaurantForm() {
   const [cuisine, setCuisine] = useState("Any");
   const [loading, setLoading] = useState(false);
   const [restaurant, setRestaurant] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const reverseGeocodeMutation = api.place.reverseGeocode.useMutation();
   const searchRestaurantsMutation = api.place.searchRestaurants.useMutation();
@@ -93,12 +93,11 @@ export default function RestaurantForm() {
     e.preventDefault();
 
     if (!selectedPlace) {
-      setError("Please select a location");
+      toast.error("Please select a location first");
       return;
     }
 
     setLoading(true);
-    setError(null);
     setRestaurant(null);
 
     try {
@@ -111,12 +110,13 @@ export default function RestaurantForm() {
       });
 
       setRestaurant(result);
+      toast.success("Found the perfect spot!");
     } catch (err) {
-      setError(
+      const errorMessage =
         err instanceof Error
           ? err.message
-          : "Failed to find a restaurant. Please try again.",
-      );
+          : "Failed to find a restaurant. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -256,13 +256,6 @@ export default function RestaurantForm() {
           </select>
         </div>
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="rounded-2xl bg-red-100/80 p-4 text-center text-red-700">
-          {error}
-        </div>
-      )}
 
       {/* Restaurant Result */}
       {restaurant && (
