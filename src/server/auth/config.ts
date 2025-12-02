@@ -44,16 +44,35 @@ export const authConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // TODO: Implement your own authentication logic here
-        // This is a placeholder - you'll need to:
-        // 1. Validate credentials
-        // 2. Check against your database
-        // 3. Verify password (use bcrypt or similar)
-        // 4. Return user object or null
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
 
-        // For now, this is just a placeholder
-        // You should implement proper password hashing and validation
-        return null;
+        const bcrypt = await import("bcryptjs");
+
+        const user = await db.user.findUnique({
+          where: { email: credentials.email },
+        });
+
+        if (!user || !user.password) {
+          return null;
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
+        if (!isPasswordValid) {
+          return null;
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        };
       },
     }),
   ],
