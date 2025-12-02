@@ -7,7 +7,7 @@ import { Toaster } from "sonner";
 export const metadata: Metadata = {
   title: "Feed My GF",
   description: "feed your hungry indecisive girlfriend",
-  icons: [{ rel: "icon", url: "/feedmygf_black.png" }],
+  icons: [{ rel: "icon", url: "/icon.png" }],
 };
 
 export default function RootLayout({
