@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { auth } from "~/server/auth";
+import UserMenu from "./user-menu";
 
 export default async function Header() {
   const session = await auth();
@@ -19,17 +20,7 @@ export default async function Header() {
         </Link>
 
         {session?.user ? (
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">{session.user.name}</span>
-            <form action="/api/auth/signout" method="post">
-              <button
-                type="submit"
-                className="rounded-full bg-gray-200/80 px-6 py-2.5 text-sm font-medium text-gray-700 backdrop-blur-sm transition-all hover:bg-gray-300/80"
-              >
-                Sign out
-              </button>
-            </form>
-          </div>
+          <UserMenu user={session.user} />
         ) : (
           <Link
             href="/auth"
