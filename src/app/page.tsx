@@ -28,7 +28,7 @@ export default async function Home() {
             <form
               action={async () => {
                 "use server";
-                await signIn("google", { redirectTo: "/eat" });
+                await signIn("google", { redirectTo: "/auth" });
               }}
             >
               <button
@@ -61,7 +61,7 @@ export default async function Home() {
             <form
               action={async () => {
                 "use server";
-                await signIn("google", { redirectTo: "/eat" });
+                await signIn("google", { redirectTo: "/auth" });
               }}
               className="mb-4"
             >
