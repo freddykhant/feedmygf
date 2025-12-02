@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Star } from "lucide-react";
+import {
+  MapPin,
+  Navigation,
+  Star,
+  DollarSign,
+  UtensilsCrossed,
+  TrendingUp,
+} from "lucide-react";
 
 const cuisines = [
   "Any",
@@ -66,60 +73,42 @@ export default function RestaurantForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-3xl border border-gray-200 bg-white p-8 shadow-lg"
-    >
-      <div className="space-y-6">
-        {/* Location Section */}
-        <div>
-          <label className="mb-3 block text-sm font-medium text-gray-700">
-            Location
-          </label>
-          <div className="space-y-3">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <div className="flex flex-row gap-3">
+        {/* Location Input */}
+        <div className="group flex flex-1 items-center gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
+          <MapPin className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
+          <div className="flex-1">
             <input
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Enter address or use current location"
+              placeholder="Enter address"
               required
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 transition-colors focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none"
+              className="w-full bg-transparent text-base text-gray-900 placeholder-gray-400 outline-none"
             />
-            <button
-              type="button"
-              onClick={handleUseCurrentLocation}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 transition-all hover:bg-gray-100"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              Use Current Location
-            </button>
           </div>
         </div>
 
-        {/* Distance Slider */}
-        <div>
-          <label className="mb-3 flex items-center justify-between text-sm font-medium text-gray-700">
-            <span>Distance</span>
-            <span className="text-gray-500">{distance} km</span>
-          </label>
+        {/* Use Current Location Button */}
+        <button
+          type="button"
+          onClick={handleUseCurrentLocation}
+          className="flex items-center gap-4 rounded-2xl bg-gray-200/50 p-4 text-left transition-all hover:bg-gray-300/60"
+        >
+          <Navigation className="h-5 w-5 flex-shrink-0 text-gray-400" />
+          <span className="text-base text-gray-700">Use Current Location</span>
+        </button>
+      </div>
+
+      {/* Distance Slider */}
+      <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
+        <TrendingUp className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
+        <div className="flex-1">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-base text-gray-700">Distance</span>
+            <span className="text-base text-gray-500">{distance} km</span>
+          </div>
           <input
             type="range"
             min="1"
@@ -127,19 +116,21 @@ export default function RestaurantForm() {
             step="1"
             value={distance}
             onChange={(e) => setDistance(Number(e.target.value))}
-            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-gray-900"
+            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 accent-gray-600"
           />
-          <div className="mt-1 flex justify-between text-xs text-gray-400"></div>
         </div>
+      </div>
 
-        {/* Rating Slider */}
-        <div>
-          <label className="mb-3 flex items-center justify-between text-sm font-medium text-gray-700">
-            <span>Minimum Rating</span>
-            <span className="flex items-center gap-1 text-gray-500">
-              {rating.toFixed(1)} <Star className="h-4 w-4" />
+      {/* Rating Slider */}
+      <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
+        <Star className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
+        <div className="flex-1">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-base text-gray-700">Minimum Rating</span>
+            <span className="flex items-center gap-1 text-base text-gray-500">
+              {rating.toFixed(1)} ⭐
             </span>
-          </label>
+          </div>
           <input
             type="range"
             min="0"
@@ -147,17 +138,21 @@ export default function RestaurantForm() {
             step="0.1"
             value={rating}
             onChange={(e) => setRating(Number(e.target.value))}
-            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-gray-900"
+            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 accent-gray-600"
           />
-          <div className="mt-1 flex justify-between text-xs text-gray-400"></div>
         </div>
+      </div>
 
-        {/* Price Level Slider */}
-        <div>
-          <label className="mb-3 flex items-center justify-between text-sm font-medium text-gray-700">
-            <span>Maximum Price</span>
-            <span className="text-gray-500">{"$".repeat(priceLevel)}</span>
-          </label>
+      {/* Price Level Slider */}
+      <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
+        <DollarSign className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
+        <div className="flex-1">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-base text-gray-700">Maximum Price</span>
+            <span className="text-base text-gray-500">
+              {"$".repeat(priceLevel)}
+            </span>
+          </div>
           <input
             type="range"
             min="1"
@@ -165,20 +160,19 @@ export default function RestaurantForm() {
             step="1"
             value={priceLevel}
             onChange={(e) => setPriceLevel(Number(e.target.value))}
-            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-gray-900"
+            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 accent-gray-600"
           />
-          <div className="mt-1 flex justify-between text-xs text-gray-400"></div>
         </div>
+      </div>
 
-        {/* Cuisine Dropdown */}
-        <div>
-          <label className="mb-3 block text-sm font-medium text-gray-700">
-            Cuisine
-          </label>
+      {/* Cuisine Dropdown */}
+      <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
+        <UtensilsCrossed className="mt-1 h-5 w-5 flex-shrink-0 text-gray-400" />
+        <div className="flex-1">
           <select
             value={cuisine}
             onChange={(e) => setCuisine(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition-colors focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none"
+            className="w-full cursor-pointer bg-transparent text-base text-gray-700 outline-none"
           >
             {cuisines.map((c) => (
               <option key={c} value={c}>
@@ -187,16 +181,16 @@ export default function RestaurantForm() {
             ))}
           </select>
         </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-gray-900 px-4 py-4 text-base font-semibold text-white transition-all hover:bg-gray-800 disabled:opacity-50"
-        >
-          {loading ? "Searching..." : "Find Restaurant"}
-        </button>
       </div>
+
+      {/* Submit Button */}
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full rounded-2xl bg-gray-600/90 px-6 py-4 text-base font-medium text-white transition-all hover:bg-gray-700/90 disabled:opacity-50"
+      >
+        {loading ? "Searching..." : "Find Restaurant"}
+      </button>
     </form>
   );
 }
