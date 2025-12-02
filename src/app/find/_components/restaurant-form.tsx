@@ -274,11 +274,9 @@ export default function RestaurantForm() {
                 ({restaurant.userRatingCount} reviews)
               </span>
             </div>
-            {restaurant.priceLevel !== "PRICE_LEVEL_UNSPECIFIED" && (
+            {restaurant.priceLevel > 0 && (
               <span className="text-gray-600">
-                {restaurant.priceLevel
-                  .replace("PRICE_LEVEL_", "")
-                  .replace("FREE", "$")}
+                {"$".repeat(restaurant.priceLevel)}
               </span>
             )}
           </div>

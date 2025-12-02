@@ -196,84 +196,82 @@ export const placeRouter = createTRPCRouter({
 
         const { lat, lng } = detailsData.result.geometry.location;
 
-        // Search for nearby restaurants
-        const searchResponse = await fetch(
-          "https://places.googleapis.com/v1/places:searchNearby",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Goog-Api-Key": apiKey,
-              "X-Goog-FieldMask":
-                "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.primaryType,places.types,places.location",
-            },
-            body: JSON.stringify({
-              includedTypes: ["restaurant"],
-              locationRestriction: {
-                circle: {
-                  center: {
-                    latitude: lat,
-                    longitude: lng,
-                  },
-                  radius: input.distance * 1000, // Convert km to meters
-                },
-              },
-              maxResultCount: 20,
-            }),
-          },
-        );
+        // Search for nearby restaurants using Places API (legacy)
+        // Use textsearch if cuisine is specified, otherwise use nearbysearch with price filters
+        const searchUrl =
+          input.cuisine !== "Any"
+            ? `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(input.cuisine + " restaurant")}&location=${lat},${lng}&radius=${input.distance * 1000}&type=restaurant&minprice=0&maxprice=${input.priceLevel}&key=${apiKey}`
+            : `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${input.distance * 1000}&type=restaurant&minprice=0&maxprice=${input.priceLevel}&key=${apiKey}`;
+
+        const searchResponse = await fetch(searchUrl);
 
         if (!searchResponse.ok) {
-          throw new Error("Failed to search restaurants");
+          const errorData = await searchResponse.json();
+          console.error("Places API search error:", errorData);
+          throw new Error(
+            `Failed to search restaurants: ${JSON.stringify(errorData)}`,
+          );
         }
 
         const searchData = (await searchResponse.json()) as {
-          places?: Array<{
-            id: string;
-            displayName?: { text: string };
-            formattedAddress?: string;
+          results?: Array<{
+            place_id: string;
+            name: string;
+            vicinity: string;
             rating?: number;
-            userRatingCount?: number;
-            priceLevel?: string;
-            primaryType?: string;
+            user_ratings_total?: number;
+            price_level?: number;
             types?: string[];
-            location?: {
-              latitude: number;
-              longitude: number;
+            geometry: {
+              location: {
+                lat: number;
+                lng: number;
+              };
             };
           }>;
         };
 
-        if (!searchData.places) {
-          return [];
+        if (!searchData.results || searchData.results.length === 0) {
+          throw new Error(
+            "No restaurants found in this area. Try increasing the distance.",
+          );
         }
 
+        console.log(`Found ${searchData.results.length} restaurants initially`);
+
         // Filter by rating and price level
-        const filtered = searchData.places.filter((place) => {
+        const filtered = searchData.results.filter((place) => {
           const placeRating = place.rating ?? 0;
-          const placePriceLevel = place.priceLevel
-            ? place.priceLevel.replace("PRICE_LEVEL_", "")
-            : "0";
-          const priceLevelNum =
-            placePriceLevel === "FREE" ? 0 : parseInt(placePriceLevel);
+          const placePriceLevel = place.price_level ?? 0;
+
+          console.log(
+            `Restaurant: ${place.name}, Rating: ${placeRating}, Price: ${placePriceLevel}, Types: ${place.types?.join(", ")}`,
+          );
 
           // Filter by rating
-          if (placeRating < input.rating) return false;
-
-          // Filter by price level (max price)
-          if (priceLevelNum > input.priceLevel) return false;
-
-          // Filter by cuisine if not "Any"
-          if (input.cuisine !== "Any" && place.types) {
-            const cuisineType = input.cuisine.toLowerCase().replace(" ", "_");
-            const hasCuisineType = place.types.some((type) =>
-              type.toLowerCase().includes(cuisineType),
+          if (placeRating < input.rating) {
+            console.log(
+              `  Filtered out: rating ${placeRating} < ${input.rating}`,
             );
-            if (!hasCuisineType) return false;
+            return false;
           }
 
+          // Filter by price level (max price) - only if place has a price level
+          if (placePriceLevel > 0 && placePriceLevel > input.priceLevel) {
+            console.log(
+              `  Filtered out: price ${placePriceLevel} > ${input.priceLevel}`,
+            );
+            return false;
+          }
+
+          // Cuisine filtering is done via text search in the API call
+          // No need to filter again here since textsearch already filters by cuisine
+
+          console.log("  ✓ Passed all filters");
           return true;
         });
+
+        console.log(`${filtered.length} restaurants after filtering`);
 
         // Pick a random restaurant from filtered results
         if (filtered.length === 0) {
@@ -290,14 +288,16 @@ export const placeRouter = createTRPCRouter({
         }
 
         return {
-          id: randomRestaurant.id,
-          name: randomRestaurant.displayName?.text ?? "Unknown Restaurant",
-          address: randomRestaurant.formattedAddress ?? "Address not available",
+          id: randomRestaurant.place_id,
+          name: randomRestaurant.name,
+          address: randomRestaurant.vicinity,
           rating: randomRestaurant.rating ?? 0,
-          userRatingCount: randomRestaurant.userRatingCount ?? 0,
-          priceLevel: randomRestaurant.priceLevel ?? "PRICE_LEVEL_UNSPECIFIED",
-          primaryType: randomRestaurant.primaryType ?? "restaurant",
-          location: randomRestaurant.location,
+          userRatingCount: randomRestaurant.user_ratings_total ?? 0,
+          priceLevel: randomRestaurant.price_level ?? 0,
+          location: {
+            latitude: randomRestaurant.geometry.location.lat,
+            longitude: randomRestaurant.geometry.location.lng,
+          },
         };
       } catch (error) {
         console.error("Restaurant search error:", error);
