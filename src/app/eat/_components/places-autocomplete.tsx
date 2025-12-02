@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Input } from "~/components/ui/input";
+import { searchPlaces, type PlaceResult } from "~/server/actions/places";
 import { MapPin, Loader2 } from "lucide-react";
 
 export default function PlacesAutocomplete({
