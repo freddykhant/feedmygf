@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   MapPin,
   Navigation,
@@ -13,6 +14,7 @@ import {
 import PlacesAutocomplete, { type PlaceResult } from "./places-autocomplete";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
 type Restaurant = {
   id: string;
@@ -21,6 +23,7 @@ type Restaurant = {
   rating: number;
   userRatingCount: number;
   priceLevel: number;
+  photoUrl?: string;
   location?: {
     latitude: number;
     longitude: number;
@@ -124,6 +127,13 @@ export default function RestaurantForm() {
 
       setRestaurant(result);
       toast.success("Found the perfect spot!");
+      
+      // Trigger confetti animation
+      void confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
     } catch (err) {
       const errorMessage =
         err instanceof Error
@@ -273,6 +283,17 @@ export default function RestaurantForm() {
       {/* Restaurant Result */}
       {restaurant && (
         <div className="rounded-2xl bg-white/80 p-6 shadow-sm">
+          {restaurant.photoUrl && (
+            <div className="relative mb-4 h-64 w-full overflow-hidden rounded-xl">
+              <Image
+                src={restaurant.photoUrl}
+                alt={restaurant.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 600px"
+              />
+            </div>
+          )}
           <h3 className="text-2xl font-bold text-gray-900">
             {restaurant.name}
           </h3>

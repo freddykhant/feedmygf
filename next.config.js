@@ -5,6 +5,16 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "places.googleapis.com",
+        pathname: "/v1/**",
+      },
+    ],
+  },
+};
 
 export default config;
