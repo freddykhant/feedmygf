@@ -14,7 +14,7 @@ export default async function Home() {
     <HydrateClient>
       <div className="relative flex min-h-screen flex-col overflow-hidden bg-linear-to-b from-pink-50 via-orange-50 to-blue-100">
         {/* Header */}
-        <header className="relative z-10 border-b border-gray-200/50 bg-white/50 backdrop-blur-sm">
+        <header className="relative z-10 border-b border-gray-200/80 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-2">
               <span className="text-lg font-semibold text-gray-900">
@@ -23,7 +23,7 @@ export default async function Home() {
             </div>
             <Link
               href="/auth"
-              className="rounded-full border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-gray-900 transition-all hover:bg-gray-50"
+              className="rounded-full bg-gray-600/10 px-4 py-2 text-sm font-medium text-gray-600 backdrop-blur-sm transition-all hover:bg-gray-700/80 hover:text-white"
             >
               Sign in
             </Link>
@@ -44,13 +44,13 @@ export default async function Home() {
 
             {/* Subheading */}
             <p className="mb-12 text-xl text-gray-600 md:text-2xl">
-              For your clueless self, and your hangry girlfriend.
+              Feed your hangry girlfriend
             </p>
 
             {/* CTA */}
             <Link
               href="/auth"
-              className="inline-flex items-center justify-center rounded-full bg-gray-900 px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105 hover:bg-gray-800"
+              className="inline-flex items-center justify-center rounded-full bg-gray-800 px-8 py-3 text-base font-medium text-white transition-all hover:bg-gray-700"
             >
               Get Started
             </Link>
