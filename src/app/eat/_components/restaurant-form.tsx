@@ -8,6 +8,7 @@ import {
   DollarSign,
   UtensilsCrossed,
   TrendingUp,
+  X,
 } from "lucide-react";
 import PlacesAutocomplete, { type PlaceResult } from "./places-autocomplete";
 import { api } from "~/trpc/react";
@@ -80,6 +81,11 @@ export default function RestaurantForm() {
     setAddress(place.displayName);
   };
 
+  const handleClearLocation = () => {
+    setSelectedPlace(null);
+    setAddress("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -102,26 +108,54 @@ export default function RestaurantForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="flex flex-row gap-3">
-        {/* Location Input */}
-        <div className="group flex flex-1 items-center gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
-          <MapPin className="h-5 w-5 flex-shrink-0 text-gray-400" />
-          <PlacesAutocomplete
-            onPlaceSelect={handlePlaceSelect}
-            placeholder="Enter address"
-            value={address}
-          />
-        </div>
+        {!selectedPlace ? (
+          <>
+            {/* Location Input */}
+            <div className="group flex flex-1 items-center gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
+              <MapPin className="h-5 w-5 flex-shrink-0 text-gray-400" />
+              <PlacesAutocomplete
+                onPlaceSelect={handlePlaceSelect}
+                placeholder="Enter address"
+                value={address}
+              />
+            </div>
 
-        {/* Use Current Location Button */}
-        <button
-          type="button"
-          onClick={handleUseCurrentLocation}
-          disabled={loading}
-          className="flex items-center gap-4 rounded-2xl bg-gray-200/50 p-4 text-left transition-all hover:bg-gray-300/60 disabled:opacity-50"
-        >
-          <Navigation className="h-5 w-5 flex-shrink-0 text-gray-400" />
-          <span className="text-base text-gray-700">Use Current Location</span>
-        </button>
+            {/* Use Current Location Button */}
+            <button
+              type="button"
+              onClick={handleUseCurrentLocation}
+              disabled={loading}
+              className="flex items-center gap-4 rounded-2xl bg-gray-200/50 p-4 text-left transition-all hover:bg-gray-300/60 disabled:opacity-50"
+            >
+              <Navigation className="h-5 w-5 flex-shrink-0 text-gray-400" />
+              <span className="text-base text-gray-700">
+                Use Current Location
+              </span>
+            </button>
+          </>
+        ) : (
+          /* Selected Location Display */
+          <div className="flex flex-1 items-center justify-between rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
+            <div className="flex items-center gap-3">
+              <MapPin className="h-5 w-5 flex-shrink-0 text-gray-400" />
+              <div className="flex flex-col">
+                <span className="text-base font-medium text-gray-900">
+                  {selectedPlace.displayName}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {selectedPlace.formattedAddress}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearLocation}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-300/80 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Distance Slider */}

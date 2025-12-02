@@ -134,10 +134,17 @@ export const placeRouter = createTRPCRouter({
 
         if (data.results && data.results[0]) {
           const result = data.results[0];
+
+          // Extract just the street address (unit number + street name)
+          const addressParts = result.formatted_address.split(",");
+          const streetAddress =
+            addressParts[0]?.trim() ?? result.formatted_address;
+          const restOfAddress = addressParts.slice(1).join(",").trim();
+
           return {
             id: result.place_id,
-            displayName: result.formatted_address,
-            formattedAddress: result.formatted_address,
+            displayName: streetAddress,
+            formattedAddress: restOfAddress,
             fullDescription: result.formatted_address,
           };
         }
