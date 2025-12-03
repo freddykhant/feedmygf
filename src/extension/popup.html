@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>feedmygf</h1>
+        <p class="subtitle">find a spot nearby</p>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>Distance</label>
+          <input type="range" id="distance" min="1" max="25" value="5" />
+          <span id="distance-value">5 km</span>
+        </div>
+
+        <div class="filter-group">
+          <label>Min Rating</label>
+          <input
+            type="range"
+            id="rating"
+            min="0"
+            max="5"
+            step="0.5"
+            value="3"
+          />
+          <span id="rating-value">3.0 ⭐</span>
+        </div>
+
+        <div class="filter-group">
+          <label>Max Price</label>
+          <input type="range" id="price" min="1" max="4" value="2" />
+          <span id="price-value">$$</span>
+        </div>
+
+        <div class="filter-group">
+          <label>Cuisine</label>
+          <select id="cuisine">
+            <option value="Any">Any</option>
+            <option value="American">American</option>
+            <option value="Argentinian">Argentinian</option>
+            <option value="Australian">Australian</option>
+            <option value="BBQ">BBQ</option>
+            <option value="Belgian">Belgian</option>
+            <option value="Brazilian">Brazilian</option>
+            <option value="British">British</option>
+            <option value="Brunch">Brunch</option>
+            <option value="Burgers">Burgers</option>
+            <option value="Cajun">Cajun</option>
+            <option value="Caribbean">Caribbean</option>
+            <option value="Chinese">Chinese</option>
+            <option value="Colombian">Colombian</option>
+            <option value="Creole">Creole</option>
+            <option value="Cuban">Cuban</option>
+            <option value="Dessert">Dessert</option>
+            <option value="Diner">Diner</option>
+            <option value="Ethiopian">Ethiopian</option>
+            <option value="Filipino">Filipino</option>
+            <option value="French">French</option>
+            <option value="Fusion">Fusion</option>
+            <option value="German">German</option>
+            <option value="Greek">Greek</option>
+            <option value="Halal">Halal</option>
+            <option value="Hawaiian">Hawaiian</option>
+            <option value="Healthy">Healthy</option>
+            <option value="Indian">Indian</option>
+            <option value="Indonesian">Indonesian</option>
+            <option value="Italian">Italian</option>
+            <option value="Jamaican">Jamaican</option>
+            <option value="Japanese">Japanese</option>
+            <option value="Korean">Korean</option>
+            <option value="Latin American">Latin American</option>
+            <option value="Lebanese">Lebanese</option>
+            <option value="Malaysian">Malaysian</option>
+            <option value="Mediterranean">Mediterranean</option>
+            <option value="Mexican">Mexican</option>
+            <option value="Middle Eastern">Middle Eastern</option>
+            <option value="Mongolian">Mongolian</option>
+            <option value="Moroccan">Moroccan</option>
+            <option value="Nepalese">Nepalese</option>
+            <option value="Pakistani">Pakistani</option>
+            <option value="Peruvian">Peruvian</option>
+            <option value="Pizza">Pizza</option>
+            <option value="Polish">Polish</option>
+            <option value="Portuguese">Portuguese</option>
+            <option value="Pub Food">Pub Food</option>
+            <option value="Ramen">Ramen</option>
+            <option value="Russian">Russian</option>
+            <option value="Sandwiches">Sandwiches</option>
+            <option value="Seafood">Seafood</option>
+            <option value="Singaporean">Singaporean</option>
+            <option value="Spanish">Spanish</option>
+            <option value="Sri Lankan">Sri Lankan</option>
+            <option value="Steakhouse">Steakhouse</option>
+            <option value="Sushi">Sushi</option>
+            <option value="Taiwanese">Taiwanese</option>
+            <option value="Thai">Thai</option>
+            <option value="Turkish">Turkish</option>
+            <option value="Vegan">Vegan</option>
+            <option value="Vegetarian">Vegetarian</option>
+            <option value="Vietnamese">Vietnamese</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="find-btn" class="find-btn">Find Restaurant</button>
+
+      <div id="loading" class="loading hidden">Searching...</div>
+
+      <div id="result" class="result hidden">
+        <h3 id="restaurant-name"></h3>
+        <p id="restaurant-address"></p>
+        <div class="rating">
+          <span id="restaurant-rating"></span>
+        </div>
+        <a id="maps-link" target="_blank" class="maps-btn"
+          >Open in Google Maps</a
+        >
+      </div>
+
+      <div id="error" class="error hidden"></div>
+    </div>
+
+    <script src="confetti.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
