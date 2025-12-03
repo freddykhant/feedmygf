@@ -14,7 +14,7 @@ const config = {
     // Exclude extension folder from webpack
     config.watchOptions = {
       ...config.watchOptions,
-      ignored: ['**/src/extension/**'],
+      ignored: ["**/src/extension/**"],
     };
     return config;
   },
