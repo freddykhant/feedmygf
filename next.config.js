@@ -6,6 +6,18 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
+  // Exclude extension folder from TypeScript and build
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  webpack: (config, { isServer }) => {
+    // Exclude extension folder from webpack
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: ['**/src/extension/**'],
+    };
+    return config;
+  },
   images: {
     remotePatterns: [
       {
