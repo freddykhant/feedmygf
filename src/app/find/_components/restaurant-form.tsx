@@ -147,11 +147,11 @@ export default function RestaurantForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <div className="flex flex-row gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         {!selectedPlace ? (
           <>
             {/* Location Input */}
-            <div className="group flex flex-1 items-center gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
+            <div className="group flex flex-1 items-center gap-3 rounded-2xl bg-gray-200/50 p-3 transition-all hover:bg-gray-300/60 sm:gap-4 sm:p-4">
               <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
               <PlacesAutocomplete
                 onPlaceSelect={handlePlaceSelect}
@@ -165,24 +165,24 @@ export default function RestaurantForm() {
               type="button"
               onClick={handleUseCurrentLocation}
               disabled={loading}
-              className="flex items-center gap-4 rounded-2xl bg-gray-200/50 p-4 text-left transition-all hover:bg-gray-300/60 disabled:opacity-50"
+              className="flex items-center justify-center gap-3 rounded-2xl bg-gray-200/50 p-3 text-left transition-all hover:bg-gray-300/60 disabled:opacity-50 sm:gap-4 sm:p-4"
             >
               <Navigation className="h-5 w-5 shrink-0 text-gray-400" />
-              <span className="text-base text-gray-700">
+              <span className="text-sm text-gray-700 sm:text-base">
                 Use Current Location
               </span>
             </button>
           </>
         ) : (
           /* Selected Location Display */
-          <div className="flex flex-1 items-center justify-between rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-1 items-center justify-between rounded-2xl bg-gray-200/50 p-3 transition-all hover:bg-gray-300/60 sm:p-4">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
-              <div className="flex flex-col">
-                <span className="text-base font-medium text-gray-900">
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm font-medium text-gray-900 sm:text-base">
                   {selectedPlace.displayName}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="truncate text-xs text-gray-500 sm:text-sm">
                   {selectedPlace.formattedAddress}
                 </span>
               </div>
@@ -282,9 +282,9 @@ export default function RestaurantForm() {
 
       {/* Restaurant Result */}
       {restaurant && (
-        <div className="rounded-2xl bg-white/80 p-6 shadow-sm">
+        <div className="rounded-2xl bg-white/80 p-4 shadow-sm sm:p-6">
           {restaurant.photoUrl && (
-            <div className="relative mb-4 h-64 w-full overflow-hidden rounded-xl">
+            <div className="relative mb-4 h-48 w-full overflow-hidden rounded-xl sm:h-64">
               <Image
                 src={restaurant.photoUrl}
                 alt={restaurant.name}
@@ -294,17 +294,19 @@ export default function RestaurantForm() {
               />
             </div>
           )}
-          <h3 className="text-2xl font-bold text-gray-900">
+          <h3 className="text-xl font-bold text-gray-900 sm:text-2xl">
             {restaurant.name}
           </h3>
-          <p className="mt-2 text-gray-600">{restaurant.address}</p>
-          <div className="mt-4 flex items-center gap-4">
+          <p className="mt-2 text-sm text-gray-600 sm:text-base">
+            {restaurant.address}
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-1">
-              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium text-gray-900">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 sm:h-5 sm:w-5" />
+              <span className="text-sm font-medium text-gray-900 sm:text-base">
                 {restaurant.rating.toFixed(1)}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="text-xs text-gray-500 sm:text-sm">
                 ({restaurant.userRatingCount} reviews)
               </span>
             </div>
@@ -319,7 +321,7 @@ export default function RestaurantForm() {
               href={`https://www.google.com/maps/search/?api=1&query=${restaurant.location.latitude},${restaurant.location.longitude}&query_place_id=${restaurant.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-gray-200/80 px-6 py-2.5 text-sm font-medium text-gray-700 backdrop-blur-sm transition-all hover:bg-gray-300/80"
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-200/80 px-4 py-2 text-xs font-medium text-gray-700 backdrop-blur-sm transition-all hover:bg-gray-300/80 sm:w-auto sm:px-6 sm:py-2.5 sm:text-sm"
             >
               <MapPin className="h-4 w-4" />
               Open in Google Maps
@@ -332,7 +334,7 @@ export default function RestaurantForm() {
       <button
         type="submit"
         disabled={loading || !selectedPlace}
-        className="w-full rounded-2xl bg-gray-600/90 px-6 py-4 text-base font-medium text-white transition-all hover:bg-gray-700/90 disabled:opacity-50"
+        className="w-full rounded-2xl bg-gray-600/90 px-6 py-3 text-sm font-medium text-white transition-all hover:bg-gray-700/90 disabled:opacity-50 sm:py-4 sm:text-base"
       >
         {loading ? "Searching..." : "Find Restaurant"}
       </button>
