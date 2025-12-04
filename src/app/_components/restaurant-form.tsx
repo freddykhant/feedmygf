@@ -31,78 +31,46 @@ type Restaurant = {
 };
 
 const cuisines = [
-  "Any",
-  "American",
-  "Argentinian",
-  "Asian Fusion",
-  "Australian",
-  "Bangladeshi",
+  "Asian",
+  "Bar",
   "Barbecue",
-  "Belgian",
   "Brazilian",
-  "Breakfast & Brunch",
-  "British",
+  "Breakfast",
   "Burmese",
-  "Cajun",
+  "Cafe",
   "Caribbean",
   "Chinese",
-  "Colombian",
-  "Cuban",
   "Desserts",
-  "Ethiopian",
   "Filipino",
   "French",
   "Fusion",
   "German",
   "Greek",
   "Hawaiian",
-  "Hong Kong",
   "Indian",
   "Indonesian",
-  "International",
-  "Irish",
   "Italian",
   "Jamaican",
   "Japanese",
-  "Kebab",
   "Korean",
-  "Kosher",
-  "Latin American",
-  "Lebanese",
+  "Latin",
   "Malaysian",
   "Mediterranean",
   "Mexican",
-  "Middle Eastern",
   "Mongolian",
   "Moroccan",
-  "Nepalese",
-  "Pakistani",
-  "Peruvian",
-  "Persian",
   "Pizza",
-  "Polish",
-  "Portuguese",
+  "Pub",
   "Ramen",
-  "Russian",
-  "Salad",
   "Seafood",
   "Singaporean",
-  "Soul Food",
-  "South African",
-  "South American",
   "Spanish",
-  "Sri Lankan",
-  "Steakhouse",
   "Sushi",
-  "Taiwanese",
-  "Tapas",
-  "Tex-Mex",
   "Thai",
   "Turkish",
   "Vegan",
   "Vegetarian",
   "Vietnamese",
-  "West African",
 ];
 
 export default function RestaurantForm() {
@@ -112,7 +80,7 @@ export default function RestaurantForm() {
   const [distance, setDistance] = useState(5); // distance input
   const [rating, setRating] = useState<number | null>(3.0); // min rating input (null = any)
   const [priceLevel, setPriceLevel] = useState<number | null>(2); // max price level input (null = any)
-  const [cuisine, setCuisine] = useState("Any"); // cuisine input
+  const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]); // selected cuisines (empty = any)
   const [loading, setLoading] = useState(false);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null); // foundrestaurant
 
@@ -189,7 +157,7 @@ export default function RestaurantForm() {
         distance,
         rating: rating ?? 0, // use 0 for 'any' rating
         priceLevel: priceLevel ?? 5, // use 5 for 'any' price (higher than max 4)
-        cuisine,
+        cuisines: selectedCuisines, // empty array = any cuisine
       });
 
       setRestaurant(result);
@@ -363,20 +331,60 @@ export default function RestaurantForm() {
         </div>
       </div>
 
-      {/* cuisine dropdown */}
+      {/* cuisine multi-select */}
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
         <UtensilsCrossed className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
+          <div className="mb-2 text-sm text-gray-700">Cuisine Type</div>
+
+          {/* Selected cuisine tags */}
+          {selectedCuisines.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {selectedCuisines.map((cuisine) => (
+                <span
+                  key={cuisine}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gray-600 px-3 py-1 text-sm text-white"
+                >
+                  {cuisine}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedCuisines((prev) =>
+                        prev.filter((c) => c !== cuisine),
+                      )
+                    }
+                    className="hover:text-gray-300"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* dropdown to add cuisines */}
           <select
-            value={cuisine}
-            onChange={(e) => setCuisine(e.target.value)}
+            value=""
+            onChange={(e) => {
+              const cuisine = e.target.value;
+              if (cuisine && !selectedCuisines.includes(cuisine)) {
+                setSelectedCuisines((prev) => [...prev, cuisine]);
+              }
+            }}
             className="w-full cursor-pointer bg-transparent text-base text-gray-700 outline-none"
           >
-            {cuisines.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
+            <option value="" disabled>
+              {selectedCuisines.length === 0
+                ? "Select cuisines (or leave empty for any)"
+                : "Add another cuisine..."}
+            </option>
+            {cuisines
+              .filter((c) => c !== "Any" && !selectedCuisines.includes(c))
+              .map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
           </select>
         </div>
       </div>

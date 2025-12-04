@@ -235,7 +235,7 @@ export const placeRouter = createTRPCRouter({
         distance: z.number().min(1).max(50),
         rating: z.number().min(0).max(5), // 0 = any rating
         priceLevel: z.number().min(1).max(5), // 5 = any price (above max of 4)
-        cuisine: z.string(),
+        cuisines: z.array(z.string()), // empty array = any cuisine
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -286,88 +286,64 @@ export const placeRouter = createTRPCRouter({
         // get coordinates
         const { lat, lng } = detailsData.result.geometry.location;
 
-        // map cuisine to primary types for precise filtering
-        // using includedPrimaryTypes ensures we only get places where this is the primary type
+        // map cuisines to primary types for precise filtering
+        // using includedPrimaryTypes with multiple types creates OR logic
         let includedPrimaryTypes: string[] | undefined;
-        if (input.cuisine !== "Any") {
+        if (input.cuisines.length > 0) {
           const cuisineTypeMap: Record<string, string> = {
-            American: "american_restaurant",
-            Argentinian: "argentinian_restaurant",
-            AsianFusion: "asian_restaurant",
-            Australian: "australian_restaurant",
-            Bangladeshi: "bangladeshi_restaurant",
+            Asian: "asian_restaurant",
+            Bar: "bar",
             Barbecue: "bbq_restaurant",
-            Belgian: "belgian_restaurant",
             Brazilian: "brazilian_restaurant",
-            BreakfastBrunch: "breakfast_restaurant",
-            British: "british_restaurant",
-            Burmese: "burmese_restaurant",
-            Cajun: "cajun_restaurant",
+            Breakfast: "breakfast",
+            Burmese: "burmese",
+            Cafe: "cafe",
             Caribbean: "caribbean_restaurant",
             Chinese: "chinese_restaurant",
-            Colombian: "colombian_restaurant",
-            Cuban: "cuban_restaurant",
             Desserts: "dessert_restaurant",
-            Ethiopian: "ethiopian_restaurant",
             Filipino: "filipino_restaurant",
             French: "french_restaurant",
             Fusion: "fusion_restaurant",
             German: "german_restaurant",
             Greek: "greek_restaurant",
             Hawaiian: "hawaiian_restaurant",
-            HongKong: "hong_kong_restaurant",
             Indian: "indian_restaurant",
             Indonesian: "indonesian_restaurant",
-            International: "international_restaurant",
-            Irish: "irish_restaurant",
             Italian: "italian_restaurant",
             Jamaican: "jamaican_restaurant",
             Japanese: "japanese_restaurant",
-            Kebab: "kebab_shop",
             Korean: "korean_restaurant",
-            Kosher: "kosher_restaurant",
-            LatinAmerican: "latin_american_restaurant",
-            Lebanese: "lebanese_restaurant",
             Malaysian: "malaysian_restaurant",
             Mediterranean: "mediterranean_restaurant",
             Mexican: "mexican_restaurant",
-            MiddleEastern: "middle_eastern_restaurant",
             Mongolian: "mongolian_restaurant",
             Moroccan: "moroccan_restaurant",
-            Nepalese: "nepalese_restaurant",
-            Pakistani: "pakistani_restaurant",
-            Peruvian: "peruvian_restaurant",
-            Persian: "persian_restaurant",
+            Latin: "latin_american_restaurant",
             Pizza: "pizza_restaurant",
-            Polish: "polish_restaurant",
-            Portuguese: "portuguese_restaurant",
+            Pub: "pub",
             Ramen: "ramen_restaurant",
-            Russian: "russian_restaurant",
-            Salad: "salad_restaurant",
             Seafood: "seafood_restaurant",
             Singaporean: "singaporean_restaurant",
-            SoulFood: "soul_food_restaurant",
-            SouthAfrican: "south_african_restaurant",
-            SouthAmerican: "south_american_restaurant",
             Spanish: "spanish_restaurant",
-            SriLankan: "sri_lankan_restaurant",
-            Steakhouse: "steakhouse",
             Sushi: "sushi_restaurant",
-            Taiwanese: "taiwanese_restaurant",
-            Tapas: "tapas_restaurant",
-            TexMex: "tex_mex_restaurant",
             Thai: "thai_restaurant",
             Turkish: "turkish_restaurant",
             Vegan: "vegan_restaurant",
             Vegetarian: "vegetarian_restaurant",
             Vietnamese: "vietnamese_restaurant",
-            WestAfrican: "west_african_restaurant",
           };
-          const cuisineType = cuisineTypeMap[input.cuisine];
-          // use primary types to filter by main cuisine category
-          includedPrimaryTypes = cuisineType ? [cuisineType] : ["restaurant"];
+
+          // map selected cuisines to their API types (OR logic)
+          includedPrimaryTypes = input.cuisines
+            .map((cuisine) => cuisineTypeMap[cuisine])
+            .filter((type): type is string => !!type); // remove undefined values
+
+          // fallback to general restaurant if no valid types
+          if (includedPrimaryTypes.length === 0) {
+            includedPrimaryTypes = ["restaurant"];
+          }
         } else {
-          // when "any" is selected, use general restaurant type
+          // when empty array (any cuisine), use general restaurant type
           includedPrimaryTypes = ["restaurant"];
         }
 
@@ -495,9 +471,11 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
-        // select random restaurant from filtered results
-        const randomRestaurant =
-          filtered[Math.floor(Math.random() * filtered.length)];
+        // shuffle filtered results for true random selection across cuisines
+        const shuffled = filtered.sort(() => Math.random() - 0.5);
+
+        // select first restaurant from shuffled results
+        const randomRestaurant = shuffled[0];
 
         if (!randomRestaurant) {
           throw new TRPCError({
