@@ -7,10 +7,14 @@ const distanceInput = document.getElementById("distance");
 const ratingInput = document.getElementById("rating");
 const priceInput = document.getElementById("price");
 const cuisineSelect = document.getElementById("cuisine");
+const selectedCuisinesContainer = document.getElementById("selected-cuisines");
 const findBtn = document.getElementById("find-btn");
 const loading = document.getElementById("loading");
 const result = document.getElementById("result");
 const error = document.getElementById("error");
+
+// Track selected cuisines
+let selectedCuisines = [];
 
 // Update display values
 distanceInput.addEventListener("input", (e) => {
@@ -26,6 +30,40 @@ priceInput.addEventListener("input", (e) => {
   const value = parseInt(e.target.value);
   document.getElementById("price-value").textContent = "$".repeat(value);
 });
+
+// Handle cuisine selection
+cuisineSelect.addEventListener("change", (e) => {
+  const cuisine = e.target.value;
+  if (cuisine && !selectedCuisines.includes(cuisine)) {
+    selectedCuisines.push(cuisine);
+    renderSelectedCuisines();
+  }
+  e.target.value = ""; // Reset dropdown
+});
+
+// Render selected cuisine tags
+function renderSelectedCuisines() {
+  if (selectedCuisines.length === 0) {
+    selectedCuisinesContainer.innerHTML = "";
+    return;
+  }
+
+  selectedCuisinesContainer.innerHTML = selectedCuisines
+    .map(
+      (cuisine) =>
+        `<span class="cuisine-tag">${cuisine}<button class="remove-cuisine" data-cuisine="${cuisine}">×</button></span>`,
+    )
+    .join("");
+
+  // Add remove handlers
+  document.querySelectorAll(".remove-cuisine").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const cuisineToRemove = e.target.getAttribute("data-cuisine");
+      selectedCuisines = selectedCuisines.filter((c) => c !== cuisineToRemove);
+      renderSelectedCuisines();
+    });
+  });
+}
 
 // Find restaurant button
 findBtn.addEventListener("click", async () => {
@@ -49,7 +87,7 @@ findBtn.addEventListener("click", async () => {
       distance: parseInt(distanceInput.value),
       rating: parseFloat(ratingInput.value),
       priceLevel: parseInt(priceInput.value),
-      cuisine: cuisineSelect.value,
+      cuisines: selectedCuisines, // Send array of selected cuisines
     });
 
     // Display result
