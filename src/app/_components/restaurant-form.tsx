@@ -106,25 +106,31 @@ const cuisines = [
 ];
 
 export default function RestaurantForm() {
-  const [address, setAddress] = useState("");
-  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
-  const [distance, setDistance] = useState(5);
-  const [rating, setRating] = useState(3.0);
-  const [priceLevel, setPriceLevel] = useState(2);
-  const [cuisine, setCuisine] = useState("Any");
+  // state management for form inputs
+  const [address, setAddress] = useState(""); // address input
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null); // selected place from autocomplete
+  const [distance, setDistance] = useState(5); // distance input
+  const [rating, setRating] = useState(3.0); // min rating input
+  const [priceLevel, setPriceLevel] = useState(2); // max price level input
+  const [cuisine, setCuisine] = useState("Any"); // cuisine input
   const [loading, setLoading] = useState(false);
-  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null); // foundrestaurant
 
-  const reverseGeocodeMutation = api.place.reverseGeocode.useMutation();
-  const searchRestaurantsMutation = api.place.searchRestaurants.useMutation();
+  const reverseGeocodeMutation = api.place.reverseGeocode.useMutation(); // reverse geocode to get place ID
+  const searchRestaurantsMutation = api.place.searchRestaurants.useMutation(); // search for restaurants with filters
 
+  // handler for get current location
   const handleUseCurrentLocation = async () => {
     if ("geolocation" in navigator) {
       setLoading(true);
+
+      // get current location
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          // get coordinates from current location
           const { latitude, longitude } = position.coords;
 
+          // reverse geocode to get place ID
           void (async () => {
             try {
               const place = await reverseGeocodeMutation.mutateAsync({
@@ -132,10 +138,10 @@ export default function RestaurantForm() {
                 longitude,
               });
 
-              setAddress(place.displayName);
-              setSelectedPlace(place);
+              setAddress(place.displayName); // set address from place ID
+              setSelectedPlace(place); // set selected place from place ID
             } catch {
-              setAddress(`${latitude}, ${longitude}`);
+              setAddress(`${latitude}, ${longitude}`); // set address as coordinates
             } finally {
               setLoading(false);
             }
@@ -153,11 +159,13 @@ export default function RestaurantForm() {
     }
   };
 
+  // handler for select place from autocomplete
   const handlePlaceSelect = (place: PlaceResult) => {
     setSelectedPlace(place);
     setAddress(place.displayName);
   };
 
+  // handler for clear location
   const handleClearLocation = () => {
     setSelectedPlace(null);
     setAddress("");
@@ -174,6 +182,7 @@ export default function RestaurantForm() {
     setLoading(true);
     setRestaurant(null);
 
+    // search for restaurants with filters
     try {
       const result = await searchRestaurantsMutation.mutateAsync({
         placeId: selectedPlace.id,
@@ -186,7 +195,7 @@ export default function RestaurantForm() {
       setRestaurant(result);
       toast.success("Found the perfect spot!");
 
-      // Trigger confetti animation
+      // trigger confetti animation yippee!
       void confetti({
         particleCount: 100,
         spread: 70,
@@ -208,7 +217,7 @@ export default function RestaurantForm() {
       <div className="flex flex-col gap-3 sm:flex-row">
         {!selectedPlace ? (
           <>
-            {/* Location Input */}
+            {/* location input */}
             <div className="group flex flex-1 items-center gap-3 rounded-2xl bg-gray-200/50 p-3 transition-all hover:bg-gray-300/60 sm:gap-4 sm:p-4">
               <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
               <PlacesAutocomplete
@@ -218,7 +227,7 @@ export default function RestaurantForm() {
               />
             </div>
 
-            {/* Use Current Location Button */}
+            {/* use current location button */}
             <button
               type="button"
               onClick={handleUseCurrentLocation}
@@ -232,7 +241,7 @@ export default function RestaurantForm() {
             </button>
           </>
         ) : (
-          /* Selected Location Display */
+          /* selected location display */
           <div className="flex flex-1 items-center justify-between rounded-2xl bg-gray-200/50 p-3 transition-all hover:bg-gray-300/60 sm:p-4">
             <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
@@ -256,7 +265,7 @@ export default function RestaurantForm() {
         )}
       </div>
 
-      {/* Distance Slider */}
+      {/* distance slider */}
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
         <TrendingUp className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
@@ -276,7 +285,7 @@ export default function RestaurantForm() {
         </div>
       </div>
 
-      {/* Rating Slider */}
+      {/* rating slider */}
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
         <Star className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
@@ -298,7 +307,7 @@ export default function RestaurantForm() {
         </div>
       </div>
 
-      {/* Price Level Slider */}
+      {/* price level slider */}
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
         <DollarSign className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
@@ -320,7 +329,7 @@ export default function RestaurantForm() {
         </div>
       </div>
 
-      {/* Cuisine Dropdown */}
+      {/* cuisine dropdown */}
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
         <UtensilsCrossed className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
@@ -338,7 +347,7 @@ export default function RestaurantForm() {
         </div>
       </div>
 
-      {/* Restaurant Result */}
+      {/* restaurant result */}
       {restaurant && (
         <div className="rounded-2xl bg-white/80 p-4 shadow-sm sm:p-6">
           {restaurant.photoUrl && (
@@ -388,7 +397,7 @@ export default function RestaurantForm() {
         </div>
       )}
 
-      {/* Submit Button */}
+      {/* submit button */}
       <button
         type="submit"
         disabled={loading || !selectedPlace}
