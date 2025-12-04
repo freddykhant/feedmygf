@@ -3,7 +3,18 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { ratelimit } from "~/lib/rate-limit";
 import { TRPCError } from "@trpc/server";
 
+// Helper function to convert price level string to number
+const convertPriceLevel = (priceLevel: string | undefined): number => {
+  const priceLevelStr = priceLevel
+    ? priceLevel.replace("PRICE_LEVEL_", "")
+    : "0";
+  return priceLevelStr === "FREE" || priceLevelStr === "UNSPECIFIED"
+    ? 0
+    : parseInt(priceLevelStr);
+};
+
 export const placeRouter = createTRPCRouter({
+  // autocomplete search for places
   search: publicProcedure
     .input(
       z.object({
@@ -11,7 +22,7 @@ export const placeRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input, ctx }) => {
-      // Rate limiting
+      // rate limiting
       const identifier = ctx.headers?.get("x-forwarded-for") ?? "anonymous";
       const { success } = await ratelimit.limit(identifier);
       if (!success) {
@@ -21,6 +32,7 @@ export const placeRouter = createTRPCRouter({
         });
       }
 
+      // get google places api key
       const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
       if (!apiKey) {
@@ -30,6 +42,7 @@ export const placeRouter = createTRPCRouter({
         });
       }
 
+      // fetch places
       try {
         const response = await fetch(
           `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input.query)}&key=${apiKey}`,
@@ -39,6 +52,7 @@ export const placeRouter = createTRPCRouter({
           throw new Error("Failed to fetch places");
         }
 
+        // parse response
         const data = (await response.json()) as {
           predictions: Array<{
             place_id: string;
@@ -50,6 +64,7 @@ export const placeRouter = createTRPCRouter({
           }>;
         };
 
+        // map predictions to place results
         return data.predictions.map((prediction) => ({
           id: prediction.place_id,
           displayName: prediction.structured_formatting.main_text,
@@ -61,6 +76,7 @@ export const placeRouter = createTRPCRouter({
       }
     }),
 
+  // get details for a place
   getDetails: publicProcedure
     .input(
       z.object({
@@ -68,7 +84,7 @@ export const placeRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input, ctx }) => {
-      // Rate limiting
+      // rate limiting
       const identifier = ctx.headers?.get("x-forwarded-for") ?? "anonymous";
       const { success } = await ratelimit.limit(identifier);
       if (!success) {
@@ -96,6 +112,7 @@ export const placeRouter = createTRPCRouter({
           throw new Error("Failed to fetch place details");
         }
 
+        // parse response
         const data = (await response.json()) as {
           result: {
             geometry: {
@@ -108,6 +125,7 @@ export const placeRouter = createTRPCRouter({
           };
         };
 
+        // return coordinates and formatted address
         return {
           lat: data.result.geometry.location.lat,
           lng: data.result.geometry.location.lng,
@@ -121,6 +139,7 @@ export const placeRouter = createTRPCRouter({
       }
     }),
 
+  // reverse geocode coordinates to get place details
   reverseGeocode: publicProcedure
     .input(
       z.object({
@@ -129,7 +148,7 @@ export const placeRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      // Rate limiting
+      // rate limiting
       const identifier = ctx.headers?.get("x-forwarded-for") ?? "anonymous";
       const { success } = await ratelimit.limit(identifier);
       if (!success) {
@@ -160,6 +179,7 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
+        // parse response
         const data = (await response.json()) as {
           status?: string;
           error_message?: string;
@@ -176,14 +196,15 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
+        // return place details
         if (data.results?.[0]) {
           const result = data.results[0];
 
-          // Extract just the street address (unit number + street name)
-          const addressParts = result.formatted_address.split(",");
+          // extract just the street address (unit no. + street name)
+          const addressParts = result.formatted_address.split(","); // e.g ["123 Main St", "Happy Valley WA 6112", "Australia"]
           const streetAddress =
-            addressParts[0]?.trim() ?? result.formatted_address;
-          const restOfAddress = addressParts.slice(1).join(",").trim();
+            addressParts[0]?.trim() ?? result.formatted_address; // e.g ["123 Main St"]
+          const restOfAddress = addressParts.slice(1).join(",").trim(); // e.g "Happy Valley WA 6112, Australia"
 
           return {
             id: result.place_id,
@@ -206,6 +227,7 @@ export const placeRouter = createTRPCRouter({
       }
     }),
 
+  // search for restaurants with filters
   searchRestaurants: publicProcedure
     .input(
       z.object({
@@ -217,7 +239,7 @@ export const placeRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      // Rate limiting
+      // rate limiting
       const identifier = ctx.headers?.get("x-forwarded-for") ?? "anonymous";
       const { success } = await ratelimit.limit(identifier);
       if (!success) {
@@ -237,7 +259,7 @@ export const placeRouter = createTRPCRouter({
       }
 
       try {
-        // First get the coordinates for the place
+        // get the coordinates for the place
         const detailsResponse = await fetch(
           `https://maps.googleapis.com/maps/api/place/details/json?place_id=${input.placeId}&fields=geometry&key=${apiKey}`,
         );
@@ -249,6 +271,7 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
+        // parse response
         const detailsData = (await detailsResponse.json()) as {
           result: {
             geometry: {
@@ -260,36 +283,95 @@ export const placeRouter = createTRPCRouter({
           };
         };
 
+        // get coordinates
         const { lat, lng } = detailsData.result.geometry.location;
 
-        // Build included types based on cuisine selection
-        // when a specific cuisine is selected, use ONLY that type (not "restaurant" + cuisine) because Places API uses OR logic
+        // included types based on cuisine selection
+        // when a specific cuisine is selected, use ONLY that type (not "restaurant" + cuisine) because places API uses OR logic
         let includedTypes: string[];
         if (input.cuisine !== "Any") {
           const cuisineTypeMap: Record<string, string> = {
-            Italian: "italian_restaurant",
-            Japanese: "japanese_restaurant",
-            Chinese: "chinese_restaurant",
-            Thai: "thai_restaurant",
-            Mexican: "mexican_restaurant",
-            Indian: "indian_restaurant",
-            French: "french_restaurant",
-            Korean: "korean_restaurant",
-            Vietnamese: "vietnamese_restaurant",
-            Mediterranean: "mediterranean_restaurant",
             American: "american_restaurant",
+            Argentinian: "argentinian_restaurant",
+            AsianFusion: "asian_restaurant",
+            Australian: "australian_restaurant",
+            Bangladeshi: "bangladeshi_restaurant",
+            Barbecue: "bbq_restaurant",
+            Belgian: "belgian_restaurant",
+            Brazilian: "brazilian_restaurant",
+            BreakfastBrunch: "breakfast_restaurant",
+            British: "british_restaurant",
+            Burmese: "burmese_restaurant",
+            Cajun: "cajun_restaurant",
+            Caribbean: "caribbean_restaurant",
+            Chinese: "chinese_restaurant",
+            Colombian: "colombian_restaurant",
+            Cuban: "cuban_restaurant",
+            Desserts: "dessert_restaurant",
+            Ethiopian: "ethiopian_restaurant",
+            Filipino: "filipino_restaurant",
+            French: "french_restaurant",
+            Fusion: "fusion_restaurant",
+            German: "german_restaurant",
             Greek: "greek_restaurant",
+            Hawaiian: "hawaiian_restaurant",
+            HongKong: "hong_kong_restaurant",
+            Indian: "indian_restaurant",
+            Indonesian: "indonesian_restaurant",
+            International: "international_restaurant",
+            Irish: "irish_restaurant",
+            Italian: "italian_restaurant",
+            Jamaican: "jamaican_restaurant",
+            Japanese: "japanese_restaurant",
+            Kebab: "kebab_shop",
+            Korean: "korean_restaurant",
+            Kosher: "kosher_restaurant",
+            LatinAmerican: "latin_american_restaurant",
+            Lebanese: "lebanese_restaurant",
+            Malaysian: "malaysian_restaurant",
+            Mediterranean: "mediterranean_restaurant",
+            Mexican: "mexican_restaurant",
+            MiddleEastern: "middle_eastern_restaurant",
+            Mongolian: "mongolian_restaurant",
+            Moroccan: "moroccan_restaurant",
+            Nepalese: "nepalese_restaurant",
+            Pakistani: "pakistani_restaurant",
+            Peruvian: "peruvian_restaurant",
+            Persian: "persian_restaurant",
+            Pizza: "pizza_restaurant",
+            Polish: "polish_restaurant",
+            Portuguese: "portuguese_restaurant",
+            Ramen: "ramen_restaurant",
+            Russian: "russian_restaurant",
+            Salad: "salad_restaurant",
+            Seafood: "seafood_restaurant",
+            Singaporean: "singaporean_restaurant",
+            SoulFood: "soul_food_restaurant",
+            SouthAfrican: "south_african_restaurant",
+            SouthAmerican: "south_american_restaurant",
             Spanish: "spanish_restaurant",
+            SriLankan: "sri_lankan_restaurant",
+            Steakhouse: "steakhouse",
+            Sushi: "sushi_restaurant",
+            Taiwanese: "taiwanese_restaurant",
+            Tapas: "tapas_restaurant",
+            TexMex: "tex_mex_restaurant",
+            Thai: "thai_restaurant",
+            Turkish: "turkish_restaurant",
+            Vegan: "vegan_restaurant",
+            Vegetarian: "vegetarian_restaurant",
+            Vietnamese: "vietnamese_restaurant",
+            WestAfrican: "west_african_restaurant",
           };
           const cuisineType = cuisineTypeMap[input.cuisine];
-          // Use ONLY the specific cuisine type for precise filtering
+          // use ONLY the specific cuisine type for precise filtering
           includedTypes = cuisineType ? [cuisineType] : ["restaurant"];
         } else {
-          // When "Any" is selected, use general restaurant type
+          // when "Any" is selected, use general restaurant type
           includedTypes = ["restaurant"];
         }
 
-        // Search using Places API (New)
+        // search using new places API
         const searchResponse = await fetch(
           "https://places.googleapis.com/v1/places:searchNearby",
           {
@@ -300,6 +382,7 @@ export const placeRouter = createTRPCRouter({
               "X-Goog-FieldMask":
                 "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.location,places.photos",
             },
+            // search parameters to get restaurants data
             body: JSON.stringify({
               includedTypes: includedTypes,
               locationRestriction: {
@@ -324,6 +407,7 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
+        // parse response - get restaurants data
         const searchData = (await searchResponse.json()) as {
           places?: Array<{
             id: string;
@@ -344,6 +428,7 @@ export const placeRouter = createTRPCRouter({
           }>;
         };
 
+        // check if no restaurants were found
         if (!searchData.places || searchData.places.length === 0) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -352,17 +437,14 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
-        // Filter by price level
-        const filtered = searchData.places.filter((place) => {
-          const placePriceLevel = place.priceLevel
-            ? place.priceLevel.replace("PRICE_LEVEL_", "")
-            : "0";
-          const priceLevelNum =
-            placePriceLevel === "FREE" || placePriceLevel === "UNSPECIFIED"
-              ? 0
-              : parseInt(placePriceLevel);
+        console.log(searchData.places);
 
-          // Filter by price level (max price) - only if place has a price level
+        // filter by price level
+        const filtered = searchData.places.filter((place) => {
+          // convert price level to number
+          const priceLevelNum = convertPriceLevel(place.priceLevel);
+
+          // filter by price level (max price) - only if place has a price level (filtering non-restaurants)
           if (priceLevelNum > 0 && priceLevelNum > input.priceLevel) {
             return false;
           }
@@ -378,6 +460,7 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
+        // select a random restaurant
         const randomRestaurant =
           filtered[Math.floor(Math.random() * filtered.length)];
 
@@ -388,27 +471,19 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
-        // Convert price level from string to number
-        const priceLevelStr = randomRestaurant.priceLevel
-          ? randomRestaurant.priceLevel.replace("PRICE_LEVEL_", "")
-          : "0";
-        const priceLevel =
-          priceLevelStr === "FREE" || priceLevelStr === "UNSPECIFIED"
-            ? 0
-            : parseInt(priceLevelStr);
-
-        // Get photo URL if available
+        // get photo URL
         const photoUrl = randomRestaurant.photos?.[0]
           ? `https://places.googleapis.com/v1/${randomRestaurant.photos[0].name}/media?maxHeightPx=400&maxWidthPx=400&key=${apiKey}`
           : undefined;
 
+        // return restaurant data
         return {
           id: randomRestaurant.id,
           name: randomRestaurant.displayName?.text ?? "Unknown Restaurant",
           address: randomRestaurant.formattedAddress ?? "Address not available",
           rating: randomRestaurant.rating ?? 0,
           userRatingCount: randomRestaurant.userRatingCount ?? 0,
-          priceLevel: priceLevel,
+          priceLevel: convertPriceLevel(randomRestaurant.priceLevel),
           photoUrl: photoUrl,
           location: randomRestaurant.location
             ? {
