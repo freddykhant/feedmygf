@@ -25,7 +25,7 @@ export default function PlacesAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Debounce the query
+  // debounce query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
@@ -34,7 +34,7 @@ export default function PlacesAutocomplete({
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Fetch places using tRPC
+  // fetch places using tRPC
   const { data: results = [], isLoading } = api.place.search.useQuery(
     { query: debouncedQuery },
     {
@@ -42,14 +42,14 @@ export default function PlacesAutocomplete({
     },
   );
 
-  // Show dropdown when results change
+  // show dropdown when results change
   useEffect(() => {
     if (results.length > 0 && debouncedQuery.length >= 2) {
       setShowDropdown(true);
     }
   }, [results, debouncedQuery]);
 
-  // Click outside to close
+  // click outside to close
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -64,6 +64,7 @@ export default function PlacesAutocomplete({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // handler for select place from autocomplete
   const handleSelect = (place: PlaceResult) => {
     onPlaceSelect(place);
     setQuery(place.displayName);
@@ -72,6 +73,7 @@ export default function PlacesAutocomplete({
 
   return (
     <div ref={wrapperRef} className="relative flex-1">
+      {/* location search input */}
       <div className="relative">
         <input
           type="text"
@@ -90,7 +92,7 @@ export default function PlacesAutocomplete({
         )}
       </div>
 
-      {/* Dropdown */}
+      {/* dropdown */}
       {showDropdown && results.length > 0 && (
         <div className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
           {results.map((place: PlaceResult) => (
