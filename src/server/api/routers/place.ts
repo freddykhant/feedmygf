@@ -3,7 +3,7 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { ratelimit } from "~/lib/rate-limit";
 import { TRPCError } from "@trpc/server";
 
-// Helper function to convert price level string to number
+// helper to convert price level from string -> number
 const convertPriceLevel = (priceLevel: string | undefined): number => {
   const priceLevelStr = priceLevel
     ? priceLevel.replace("PRICE_LEVEL_", "")
@@ -259,7 +259,7 @@ export const placeRouter = createTRPCRouter({
       }
 
       try {
-        // get the coordinates for the place
+        // get coordinates for the place
         const detailsResponse = await fetch(
           `https://maps.googleapis.com/maps/api/place/details/json?place_id=${input.placeId}&fields=geometry&key=${apiKey}`,
         );
@@ -286,9 +286,9 @@ export const placeRouter = createTRPCRouter({
         // get coordinates
         const { lat, lng } = detailsData.result.geometry.location;
 
-        // included types based on cuisine selection
-        // when a specific cuisine is selected, use ONLY that type (not "restaurant" + cuisine) because places API uses OR logic
-        let includedTypes: string[];
+        // map cuisine to primary types for precise filtering
+        // using includedPrimaryTypes ensures we only get places where this is the primary type
+        let includedPrimaryTypes: string[] | undefined;
         if (input.cuisine !== "Any") {
           const cuisineTypeMap: Record<string, string> = {
             American: "american_restaurant",
@@ -364,11 +364,41 @@ export const placeRouter = createTRPCRouter({
             WestAfrican: "west_african_restaurant",
           };
           const cuisineType = cuisineTypeMap[input.cuisine];
-          // use ONLY the specific cuisine type for precise filtering
-          includedTypes = cuisineType ? [cuisineType] : ["restaurant"];
+          // use primary types to filter by main cuisine category
+          includedPrimaryTypes = cuisineType ? [cuisineType] : ["restaurant"];
         } else {
-          // when "Any" is selected, use general restaurant type
-          includedTypes = ["restaurant"];
+          // when "any" is selected, use general restaurant type
+          includedPrimaryTypes = ["restaurant"];
+        }
+
+        // build request body for places API
+        const requestBody: {
+          includedPrimaryTypes?: string[];
+          locationRestriction: {
+            circle: {
+              center: { latitude: number; longitude: number };
+              radius: number;
+            };
+          };
+          maxResultCount: number;
+          rankPreference?: string;
+        } = {
+          locationRestriction: {
+            circle: {
+              center: {
+                latitude: lat,
+                longitude: lng,
+              },
+              radius: input.distance * 1000, // convert km to m
+            },
+          },
+          maxResultCount: 20,
+          rankPreference: "POPULARITY", // rank by popularity for better results
+        };
+
+        // only add includedPrimaryTypes if we have specific cuisine filtering
+        if (includedPrimaryTypes) {
+          requestBody.includedPrimaryTypes = includedPrimaryTypes;
         }
 
         // search using new places API
@@ -380,23 +410,9 @@ export const placeRouter = createTRPCRouter({
               "Content-Type": "application/json",
               "X-Goog-Api-Key": apiKey,
               "X-Goog-FieldMask":
-                "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.location,places.photos",
+                "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.location,places.photos,places.primaryType",
             },
-            // search parameters to get restaurants data
-            body: JSON.stringify({
-              includedTypes: includedTypes,
-              locationRestriction: {
-                circle: {
-                  center: {
-                    latitude: lat,
-                    longitude: lng,
-                  },
-                  radius: input.distance * 1000,
-                },
-              },
-              maxResultCount: 20,
-              minRating: input.rating,
-            }),
+            body: JSON.stringify(requestBody),
           },
         );
 
@@ -407,7 +423,7 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
-        // parse response - get restaurants data
+        // parse response
         const searchData = (await searchResponse.json()) as {
           places?: Array<{
             id: string;
@@ -437,15 +453,26 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
-        console.log(searchData.places);
-
-        // filter by price level
+        // filter by rating, price, and quality indicators
         const filtered = searchData.places.filter((place) => {
-          // convert price level to number
-          const priceLevelNum = convertPriceLevel(place.priceLevel);
+          // skip places without ratings (likely new/unverified)
+          if (!place.rating || !place.userRatingCount) {
+            return false;
+          }
 
-          // filter by price level (max price) - only if place has a price level (filtering non-restaurants)
+          // filter by minimum rating
+          if (place.rating < input.rating) {
+            return false;
+          }
+
+          // filter by price level (max price)
+          const priceLevelNum = convertPriceLevel(place.priceLevel);
           if (priceLevelNum > 0 && priceLevelNum > input.priceLevel) {
+            return false;
+          }
+
+          // prefer places with at least 10 reviews for reliability
+          if (place.userRatingCount < 10) {
             return false;
           }
 
@@ -460,7 +487,7 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
-        // select a random restaurant
+        // select random restaurant from filtered results
         const randomRestaurant =
           filtered[Math.floor(Math.random() * filtered.length)];
 
@@ -471,7 +498,7 @@ export const placeRouter = createTRPCRouter({
           });
         }
 
-        // get photo URL
+        // get photo URL with optimized size
         const photoUrl = randomRestaurant.photos?.[0]
           ? `https://places.googleapis.com/v1/${randomRestaurant.photos[0].name}/media?maxHeightPx=400&maxWidthPx=400&key=${apiKey}`
           : undefined;
