@@ -110,8 +110,8 @@ export default function RestaurantForm() {
   const [address, setAddress] = useState(""); // address input
   const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null); // selected place from autocomplete
   const [distance, setDistance] = useState(5); // distance input
-  const [rating, setRating] = useState(3.0); // min rating input
-  const [priceLevel, setPriceLevel] = useState(2); // max price level input
+  const [rating, setRating] = useState<number | null>(3.0); // min rating input (null = any)
+  const [priceLevel, setPriceLevel] = useState<number | null>(2); // max price level input (null = any)
   const [cuisine, setCuisine] = useState("Any"); // cuisine input
   const [loading, setLoading] = useState(false);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null); // foundrestaurant
@@ -187,8 +187,8 @@ export default function RestaurantForm() {
       const result = await searchRestaurantsMutation.mutateAsync({
         placeId: selectedPlace.id,
         distance,
-        rating,
-        priceLevel,
+        rating: rating ?? 0, // use 0 for 'any' rating
+        priceLevel: priceLevel ?? 5, // use 5 for 'any' price (higher than max 4)
         cuisine,
       });
 
@@ -291,19 +291,36 @@ export default function RestaurantForm() {
         <div className="flex-1">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-base text-gray-700">Minimum Rating</span>
-            <span className="flex items-center gap-1 text-base text-gray-500">
-              {rating.toFixed(1)} ⭐
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRating(rating === null ? 3.0 : null)}
+                className={`rounded-lg px-3 py-1 text-sm font-medium transition-all ${
+                  rating === null
+                    ? "bg-gray-600 text-white"
+                    : "bg-gray-300/60 text-gray-600 hover:bg-gray-300"
+                }`}
+              >
+                Any
+              </button>
+              {rating !== null && (
+                <span className="flex items-center gap-1 text-base text-gray-500">
+                  {rating.toFixed(1)} ⭐
+                </span>
+              )}
+            </div>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="5"
-            step="0.1"
-            value={rating}
-            onChange={(e) => setRating(Number(e.target.value))}
-            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 accent-gray-600"
-          />
+          {rating !== null && (
+            <input
+              type="range"
+              min="0"
+              max="5"
+              step="0.1"
+              value={rating}
+              onChange={(e) => setRating(Number(e.target.value))}
+              className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 accent-gray-600"
+            />
+          )}
         </div>
       </div>
 
@@ -313,19 +330,36 @@ export default function RestaurantForm() {
         <div className="flex-1">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-base text-gray-700">Maximum Price</span>
-            <span className="text-base text-gray-500">
-              {"$".repeat(priceLevel)}
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPriceLevel(priceLevel === null ? 2 : null)}
+                className={`rounded-lg px-3 py-1 text-sm font-medium transition-all ${
+                  priceLevel === null
+                    ? "bg-gray-600 text-white"
+                    : "bg-gray-300/60 text-gray-600 hover:bg-gray-300"
+                }`}
+              >
+                Any
+              </button>
+              {priceLevel !== null && (
+                <span className="text-base text-gray-500">
+                  {"$".repeat(priceLevel)}
+                </span>
+              )}
+            </div>
           </div>
-          <input
-            type="range"
-            min="1"
-            max="4"
-            step="1"
-            value={priceLevel}
-            onChange={(e) => setPriceLevel(Number(e.target.value))}
-            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 accent-gray-600"
-          />
+          {priceLevel !== null && (
+            <input
+              type="range"
+              min="1"
+              max="4"
+              step="1"
+              value={priceLevel}
+              onChange={(e) => setPriceLevel(Number(e.target.value))}
+              className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 accent-gray-600"
+            />
+          )}
         </div>
       </div>
 

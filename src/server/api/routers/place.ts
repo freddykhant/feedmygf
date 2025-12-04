@@ -233,8 +233,8 @@ export const placeRouter = createTRPCRouter({
       z.object({
         placeId: z.string(),
         distance: z.number().min(1).max(50),
-        rating: z.number().min(0).max(5),
-        priceLevel: z.number().min(1).max(4),
+        rating: z.number().min(0).max(5), // 0 = any rating
+        priceLevel: z.number().min(1).max(5), // 5 = any price (above max of 4)
         cuisine: z.string(),
       }),
     )
@@ -455,24 +455,32 @@ export const placeRouter = createTRPCRouter({
 
         // filter by rating, price, and quality indicators
         const filtered = searchData.places.filter((place) => {
-          // skip places without ratings (likely new/unverified)
-          if (!place.rating || !place.userRatingCount) {
+          // skip places without ratings (likely new/unverified) - unless rating is 'any' (0)
+          if (input.rating > 0 && (!place.rating || !place.userRatingCount)) {
             return false;
           }
 
-          // filter by minimum rating
-          if (place.rating < input.rating) {
+          // filter by minimum rating (0 = any rating)
+          if (input.rating > 0 && place.rating && place.rating < input.rating) {
             return false;
           }
 
-          // filter by price level (max price)
+          // filter by price level (5 = any price, max normal is 4)
           const priceLevelNum = convertPriceLevel(place.priceLevel);
-          if (priceLevelNum > 0 && priceLevelNum > input.priceLevel) {
+          if (
+            input.priceLevel < 5 &&
+            priceLevelNum > 0 &&
+            priceLevelNum > input.priceLevel
+          ) {
             return false;
           }
 
-          // prefer places with at least 10 reviews for reliability
-          if (place.userRatingCount < 10) {
+          // prefer places with at least 10 reviews for reliability (unless rating is 'any')
+          if (
+            input.rating > 0 &&
+            place.userRatingCount &&
+            place.userRatingCount < 10
+          ) {
             return false;
           }
 
