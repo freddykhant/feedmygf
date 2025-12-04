@@ -335,7 +335,7 @@ export default function RestaurantForm() {
       <div className="flex items-start gap-4 rounded-2xl bg-gray-200/50 p-4 transition-all hover:bg-gray-300/60">
         <UtensilsCrossed className="mt-1 h-5 w-5 shrink-0 text-gray-400" />
         <div className="flex-1">
-          <div className="mb-2 text-sm text-gray-700">Cuisine Type</div>
+          <div className="mb-2 text-base text-gray-700">Cuisine Type</div>
 
           {/* Selected cuisine tags */}
           {selectedCuisines.length > 0 && (
